@@ -1,9 +1,9 @@
 [package]
 name = "pitchslap"
 version = "0.1.0"
-description = "A Tauri App"
-authors = ["you"]
-edition = "2021"
+description = "App to modulate voice in real-time"
+authors = ["Damian Kawerski"]
+edition = "2024"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -22,5 +22,10 @@ tauri = { version = "2", features = [] }
 tauri-plugin-opener = "2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
-
+cpal = {version = "*", features = ["asio"] }
+anyhow = "1.0"
+hound = "3.5"
+ringbuf = "0.4.1"
+clap = { version = "4.0", features = ["derive"] }
+fundsp = "0.20.0"
 
