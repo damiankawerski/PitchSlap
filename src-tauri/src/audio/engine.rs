@@ -1,0 +1,126 @@
+// src-tauri/src/audio/engine.rs
+// This module handles audio processing tasks such as reading and writing audio data
+
+use cpal::traits::{DeviceTrait, StreamTrait};
+use cpal::Stream;
+use std::sync::{Arc, Mutex};
+
+use super::device::*;
+use super::config::*;
+use super::utils::*;
+use super::buffer::*;
+
+// Struct for the audio engine
+pub struct AudioStreams {
+    audio_buffer: Arc<Mutex<AudioBuffer>>, // Shared audio buffer for input and output throws dead_code but is used in closures
+    input_stream: Stream,
+    output_stream: Stream,
+}
+
+// Implementation of the AudioStreams struct
+impl AudioStreams {
+    // Constructor for AudioStreams
+    pub fn new(devices: &AudioDeviceOpt, configs: &AudioDeviceConfig, buffer_size: usize) -> anyhow::Result<Self> {
+        // Verify sample rate compatibility
+        verify_sample_rate(&configs)?;
+        
+        // Create shared audio buffer
+        let audio_buffer = Arc::new(Mutex::new(AudioBuffer::new(buffer_size)));
+        
+        // Create input and output streams
+        let host = cpal::default_host();
+        let input_device = AudioDeviceOpt::select_input_device(&host, &devices)?;
+        let output_device = AudioDeviceOpt::select_output_device(&host, &devices)?;
+
+        // Clone buffer for closures
+        let buffer_input = Arc::clone(&audio_buffer);
+        let buffer_output = Arc::clone(&audio_buffer);
+        
+        // Get channel counts from configs
+        let input_channels = configs.input_config().channels as usize;
+        let output_channels = configs.output_config().channels as usize;
+
+        // Create input stream
+        let input_stream = input_device.build_input_stream(
+            configs.input_config(),
+            move |data: &[f32], info: &cpal::InputCallbackInfo| {
+                if let Ok(mut buffer) = buffer_input.lock() {
+                    if let Err(e) = buffer.input_data_fn(data, info) {
+                        eprintln!("Input callback error: {}", e);
+                    }
+                }
+            },
+            error_callback,
+            None, // timeout
+        )?;
+
+        // Create output stream
+        let output_stream = output_device.build_output_stream(
+            configs.output_config(),
+            move |data: &mut [f32], info: &cpal::OutputCallbackInfo| {
+                if let Ok(mut buffer) = buffer_output.lock() {
+                    if let Err(e) = buffer.output_data_fn(input_channels, output_channels, data, info) {
+                        eprintln!("Output callback error: {}", e);
+                    }
+                }
+            },
+            error_callback,
+            None, // timeout
+        )?;
+
+        Ok(Self {
+            audio_buffer,
+            input_stream,
+            output_stream,
+        })
+    }
+
+    // Start audio streams
+    pub fn start(&self) -> anyhow::Result<()> {
+        self.input_stream.play()?;
+        self.output_stream.play()?;
+        Ok(())
+    }
+
+    // Stop audio streams
+    pub fn stop(&self) -> anyhow::Result<()> {
+        self.input_stream.pause()?;
+        self.output_stream.pause()?;
+        Ok(())
+    }
+
+
+    pub fn get_buffer(&self) -> Arc<Mutex<AudioBuffer>> {
+        Arc::clone(&self.audio_buffer)
+    }
+}
+
+// Error callback function
+fn error_callback(err: cpal::StreamError) {
+    eprintln!("Audio stream error: {}", err);
+}
+
+
+// Testing loopback for the audio engine
+pub fn loopback() -> anyhow::Result<()> {
+    // Initialize audio device options
+    let devices = AudioDeviceOpt::new("default".to_string(), "default".to_string(), 150.0);
+    // Create audio device configuration
+    let config = AudioDeviceConfig::new(
+        AudioDeviceOpt::select_input_device(&cpal::default_host(), &devices)?,
+        AudioDeviceOpt::select_output_device(&cpal::default_host(), &devices)?,
+    )?;
+
+    // Create audio streams with a buffer size double of the sample rate
+    let capacity = create_latency_samples(&config, devices.latency());
+
+    let audio_streams = AudioStreams::new(&devices, &config, capacity)?;
+    
+    // Start the audio streams
+    audio_streams.start()?;
+    
+    // Keep the application running to allow audio processing
+    std::thread::park();
+    
+    Ok(())
+}
