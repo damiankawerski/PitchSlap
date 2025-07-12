@@ -11,6 +11,12 @@ use super::utils::*;
 use super::buffer::*;
 
 // Struct for the audio engine
+// Tutaj dam komentarz po polsku
+// audio_buffer istnieje tylko po to żeby był jawny dla zewnętrznego kodu
+// Sam w sobie konstruktor używa wewnętrznego bufora do strumieni
+// Ale to ten sam bufor który jest używany do wejścia i wyjścia !!!
+// Dostęp do bufora jest możliwy przez get_buffer
+
 pub struct AudioStreams {
     audio_buffer: Arc<Mutex<AudioBuffer>>, // Shared audio buffer for input and output throws dead_code but is used in closures
     input_stream: Stream,
