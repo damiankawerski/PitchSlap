@@ -1,12 +1,13 @@
-// import { useState } from "react";
-// import { invoke } from "@tauri-apps/api/core";
 import "./App.css";
+import LoopbackControl from "./LoopbackControl";
 
 function App() {
-
   return (
-    <p>TEST</p> 
-  )
+    <div>
+      <h1>Audio Loopback</h1>
+      <LoopbackControl />
+    </div>
+  );
 }
 
 export default App;

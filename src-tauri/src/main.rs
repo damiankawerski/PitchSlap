@@ -1,17 +1,11 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
-use pitchslap_lib::audio::device::AudioDeviceOpt;
-use pitchslap_lib::audio::config::{self, AudioDeviceConfig};
-use pitchslap_lib::audio::engine::{loopback, AudioStreams};
-use pitchslap_lib::audio::utils::*;
-
+// use pitchslap_lib::audio::globals::{AUDIO_ENGINE, LOOPBACK_THREAD};
+// use pitchslap_lib::commands::loopback::{loopback, stop_loopback};
 
 fn main() {
 
-    // testing the audio engine
-    loopback()
-        .expect("Failed to start audio loopback");
 
     
-    // pitchslap_lib::run()
+    pitchslap_lib::commands::app_runner::run();
 } 

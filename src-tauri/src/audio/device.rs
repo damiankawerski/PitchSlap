@@ -5,7 +5,7 @@ use clap::Parser;
 use cpal::{traits::{DeviceTrait, HostTrait}, Device, Host};
 
 
-// Struct for selected audio devices
+// Struct for selecting audio devices
 #[derive(Parser, Debug)]
 pub struct AudioDeviceOpt {
     // The input audio device to use
@@ -77,6 +77,20 @@ impl AudioDeviceOpt {
             Err(anyhow::anyhow!("Output device '{}' not found", opt.output_device))
         }
     }
+
+
+    pub fn list_input_devices(host: &Host) -> anyhow::Result<Vec<String>> {
+        let devices = host.input_devices()?;
+        let device_names: Vec<String> = devices.map(|d| d.name().unwrap_or_default()).collect();
+        Ok(device_names)
+    }
+
+    pub fn list_output_devices(host: &Host) -> anyhow::Result<Vec<String>> {
+        let devices = host.output_devices()?;
+        let device_names: Vec<String> = devices.map(|d| d.name().unwrap_or_default()).collect();
+        Ok(device_names)
+    }
+    
 }
 
 

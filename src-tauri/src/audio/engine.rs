@@ -81,20 +81,25 @@ impl AudioStreams {
         })
     }
 
-    // Start audio streams
-    pub fn start(&self) -> anyhow::Result<()> {
+    pub fn start_input_stream(&self) -> anyhow::Result<()> {
         self.input_stream.play()?;
+        Ok(())
+    }
+
+    pub fn start_output_stream(&self) -> anyhow::Result<()> {
         self.output_stream.play()?;
         Ok(())
     }
 
-    // Stop audio streams
-    pub fn stop(&self) -> anyhow::Result<()> {
+    pub fn stop_input_stream(&self) -> anyhow::Result<()> {
         self.input_stream.pause()?;
-        self.output_stream.pause()?;
         Ok(())
     }
 
+    pub fn stop_output_stream(&self) -> anyhow::Result<()> {
+        self.output_stream.pause()?;
+        Ok(())
+    }
 
     pub fn get_buffer(&self) -> Arc<Mutex<AudioBuffer>> {
         Arc::clone(&self.audio_buffer)
@@ -107,26 +112,45 @@ fn error_callback(err: cpal::StreamError) {
 }
 
 
-// Testing loopback for the audio engine
-pub fn loopback() -> anyhow::Result<()> {
-    // Initialize audio device options
-    let devices = AudioDeviceOpt::new("default".to_string(), "default".to_string(), 150.0);
-    // Create audio device configuration
-    let config = AudioDeviceConfig::new(
-        AudioDeviceOpt::select_input_device(&cpal::default_host(), &devices)?,
-        AudioDeviceOpt::select_output_device(&cpal::default_host(), &devices)?,
-    )?;
-
-    // Create audio streams with a buffer size double of the sample rate
-    let capacity = create_latency_samples(&config, devices.latency());
-
-    let audio_streams = AudioStreams::new(&devices, &config, capacity)?;
-    
-    // Start the audio streams
-    audio_streams.start()?;
-    
-    // Keep the application running to allow audio processing
-    std::thread::park();
-    
-    Ok(())
+// Struct for main audio engine functionality
+pub struct AudioEngine {
+    audio_streams: AudioStreams,
 }
+
+// Implementation of the AudioEngine struct
+// Implementation of the AudioEngine struct
+impl AudioEngine {
+    // Constructor for AudioEngine with default devices and configurations (TODO implement a way to set custom devices)
+    pub fn new() -> anyhow::Result<Self> {
+        let devices = AudioDeviceOpt::new("default".to_string(), "default".to_string(), 150.0);
+        let config = AudioDeviceConfig::new(
+            AudioDeviceOpt::select_input_device(&cpal::default_host(), &devices)?,
+            AudioDeviceOpt::select_output_device(&cpal::default_host(), &devices)?,
+        )?;
+
+        let capacity = create_latency_samples(&config, devices.latency());
+
+        let audio_streams = AudioStreams::new(&devices, &config, capacity)?;
+
+        Ok(AudioEngine {
+            audio_streams,
+        })
+    }
+
+    pub fn start_input_stream(&self) -> anyhow::Result<()> {
+        self.audio_streams.start_input_stream()
+    }
+
+    pub fn start_output_stream(&self) -> anyhow::Result<()> {
+        self.audio_streams.start_output_stream()
+    }
+
+    pub fn stop_input_stream(&self) -> anyhow::Result<()> {
+        self.audio_streams.stop_input_stream()
+    }
+
+    pub fn stop_output_stream(&self) -> anyhow::Result<()> {
+        self.audio_streams.stop_output_stream()
+    }
+}
+
