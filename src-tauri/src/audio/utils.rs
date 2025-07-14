@@ -18,7 +18,8 @@ pub fn verify_sample_rate(conf: &AudioDeviceConfig) -> anyhow::Result<()> {
 
 
 // Function to create latency samples based on the audio device configuration and latency in milliseconds
-pub fn create_latency_samples(conf: &AudioDeviceConfig, latency: f32) -> usize {
+pub fn create_latency_samples(conf: &AudioDeviceConfig) -> usize {
+    let latency = conf.latency();
     let latency_frames = (latency / 1_000.0) * conf.input_config().sample_rate.0 as f32;
     let latency_samples = latency_frames as usize * conf.input_config().channels as usize;
 

@@ -17,6 +17,8 @@ use super::buffer::*;
 // Ale to ten sam bufor który jest używany do wejścia i wyjścia !!!
 // Dostęp do bufora jest możliwy przez get_buffer
 
+
+// Modification of signal will probably need changing this struct
 pub struct AudioStreams {
     audio_buffer: Arc<Mutex<AudioBuffer>>, // Shared audio buffer for input and output throws dead_code but is used in closures
     input_stream: Stream,
@@ -26,7 +28,7 @@ pub struct AudioStreams {
 // Implementation of the AudioStreams struct
 impl AudioStreams {
     // Constructor for AudioStreams
-    pub fn new(devices: &AudioDeviceOpt, configs: &AudioDeviceConfig, buffer_size: usize) -> anyhow::Result<Self> {
+    pub fn new(devices: &AudioDevices, configs: &AudioDeviceConfig, buffer_size: usize) -> anyhow::Result<Self> {
         // Verify sample rate compatibility
         verify_sample_rate(&configs)?;
         
@@ -34,9 +36,9 @@ impl AudioStreams {
         let audio_buffer = Arc::new(Mutex::new(AudioBuffer::new(buffer_size)));
         
         // Create input and output streams
-        let host = cpal::default_host();
-        let input_device = AudioDeviceOpt::select_input_device(&host, &devices)?;
-        let output_device = AudioDeviceOpt::select_output_device(&host, &devices)?;
+
+        let input_device = devices.input_device();
+        let output_device = devices.output_device();
 
         // Clone buffer for closures
         let buffer_input = Arc::clone(&audio_buffer);
@@ -118,22 +120,14 @@ pub struct AudioEngine {
 }
 
 // Implementation of the AudioEngine struct
-// Implementation of the AudioEngine struct
 impl AudioEngine {
-    // Constructor for AudioEngine with default devices and configurations (TODO implement a way to set custom devices)
-    pub fn new() -> anyhow::Result<Self> {
-        let devices = AudioDeviceOpt::new("default".to_string(), "default".to_string(), 150.0);
-        let config = AudioDeviceConfig::new(
-            AudioDeviceOpt::select_input_device(&cpal::default_host(), &devices)?,
-            AudioDeviceOpt::select_output_device(&cpal::default_host(), &devices)?,
-        )?;
+    // Constructor for AudioEngine with default devices and configurations 
+    pub fn new(devices: &AudioDevices, config: &AudioDeviceConfig) -> anyhow::Result<Self> {
 
-        let capacity = create_latency_samples(&config, devices.latency());
+        let capacity = create_latency_samples(&config);
 
-        let audio_streams = AudioStreams::new(&devices, &config, capacity)?;
-
-        Ok(AudioEngine {
-            audio_streams,
+        Ok(Self {
+            audio_streams: AudioStreams::new(&devices, &config, capacity)?,
         })
     }
 
