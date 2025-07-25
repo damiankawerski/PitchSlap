@@ -28,4 +28,6 @@ hound = "3.5"
 ringbuf = "0.4.1"
 clap = { version = "4.0", features = ["derive"] }
 fundsp = "0.20.0"
-
+ctrlc = "*"
+lazy_static = "*"
+once_cell = "*"
