@@ -1,123 +1,161 @@
-// This is audio handler, other modules should use this module to interact with audio processing
+use clap::Parser;
 
-use anyhow::Ok;
-use cpal::Host;
-
-use super::config::*;
 use super::device::*;
 use super::engine::*;
+use std::sync::{Arc, Mutex};
+use std::thread::{self, JoinHandle};
+use std::time::Duration;
 
-
-use std::sync::{Arc, Mutex, OnceLock};
-use std::thread::{JoinHandle};
-
-struct AudioHandlerOpt {
-    host: Arc<Host>,
-    // Audio device options
-    audio_device_opt: AudioDeviceOpt,
+pub struct AudioHandler {
+    options: AudioDeviceOptions,
+    audio_devices: AudioDeviceManager,
+    engine_handle: Option<JoinHandle<()>>,
+    engine_control: Option<Arc<Mutex<bool>>>, // true = run, false = stop
+    is_running: bool,
 }
 
-impl AudioHandlerOpt {
-    fn new() -> Self {
-        AudioHandlerOpt {
-            host: Arc::new(cpal::default_host()),
-            audio_device_opt: AudioDeviceOpt::new("default".to_string(), "default".to_string()),
+impl AudioHandler {
+    // default host for now
+    pub fn new() -> Self {
+        AudioHandler {
+            audio_devices: AudioDeviceManager::new(cpal::default_host()),
+            options: AudioDeviceOptions::parse(),
+            engine_handle: None,
+            engine_control: None,
+            is_running: false,
         }
     }
 
-    pub fn get_input_devices(&self) -> anyhow::Result<Vec<String>> {
-        self.audio_device_opt.list_input_devices(&self.host)
-    }
-
-    pub fn get_output_devices(&self) -> anyhow::Result<Vec<String>> {
-        self.audio_device_opt.list_output_devices(&self.host)
-    }
-
-    pub fn set_host(&mut self, host: Arc<Host>) {
-        self.host = host;
-    }
-
-    pub fn get_host(&self) -> Arc<Host> {
-        self.host.clone()
-    }
-
-    pub fn get_audio_device_opt(&self) -> &AudioDeviceOpt {
-        &self.audio_device_opt
-    }
-
-    pub fn set_audio_device_opt(&mut self, opt: AudioDeviceOpt) {
-        self.audio_device_opt = opt;
-    }
-
-}
-
-
-pub struct AudioHandler {
-    devices: AudioDevices,
-    config: AudioDeviceConfig,
-    audio_engine: AudioEngine,
-    audio_handler_opt: AudioHandlerOpt,
-}
-
-
-impl AudioHandler {
-    pub fn new() -> anyhow::Result<Self> {
-        let audio_handler_opt = AudioHandlerOpt::new();
-        let host = audio_handler_opt.get_host();
-        let devices = AudioDevices::select_devices(host.as_ref(), &audio_handler_opt.get_audio_device_opt())?;
-        let config = AudioDeviceConfig::new(&devices, 150.0)?;
-        let audio_engine = AudioEngine::new(&devices, &config)?;
-
-        Ok(Self {
-            devices,
-            config,
-            audio_engine,
-            audio_handler_opt,
-        })
-    }
-
-    pub fn change_input_audio_device(&mut self, name: &str) -> anyhow::Result<()> {
-        let host = self.audio_handler_opt.get_host();
-        let opt = AudioDeviceOpt::new(name.to_string(), self.audio_handler_opt.get_audio_device_opt().output_device());
-        let device = AudioDeviceOpt::select_input_device(host.as_ref(), &opt)?;
-        self.devices.set_input_device(device);
-        self.audio_handler_opt.set_audio_device_opt(opt);
-        let new_config = AudioDeviceConfig::new(&self.devices, self.config.latency())?;
-        self.audio_engine = AudioEngine::new(&self.devices, &self.config)?;
-        self.config = new_config;
+    pub fn select_audio_devices(&mut self, opt: &AudioDeviceOptions) -> anyhow::Result<()> {
+        self.audio_devices.select_devices_from_options(opt)?;
+        self.options = opt.clone();
         Ok(())
     }
 
-    pub fn change_output_audio_device(&mut self, name: &str) -> anyhow::Result<()> {
-        let host = self.audio_handler_opt.get_host();
-        let opt = AudioDeviceOpt::new(self.audio_handler_opt.get_audio_device_opt().input_device(), name.to_string());
-        let device = AudioDeviceOpt::select_output_device(host.as_ref(), &opt)?;
-        self.devices.set_output_device(device);
-        self.audio_handler_opt.set_audio_device_opt(opt);
-        let new_config = AudioDeviceConfig::new(&self.devices, self.config.latency())?;
-        self.audio_engine = AudioEngine::new( &self.devices, &self.config)?;
-        self.config = new_config;
+    pub fn start_audio_engine_loopback(&mut self) -> anyhow::Result<()> {
+        if self.is_running {
+            return Err(anyhow::anyhow!("Audio engine is already running"));
+        }
+
+        // Verify we have required devices
+        let input_device = self.audio_devices.get_input_device()
+            .ok_or_else(|| anyhow::anyhow!("No input device available"))?;
+        let output_device = self.audio_devices.get_output_device()
+            .ok_or_else(|| anyhow::anyhow!("No output device available"))?;
+
+        // Clone devices and options for the thread
+        let input_device_clone = AudioDevice::new(
+            input_device.get_device().clone(),
+            input_device.get_config().clone()
+        );
+        let output_device_clone = AudioDevice::new(
+            output_device.get_device().clone(),
+            output_device.get_config().clone()
+        );
+        let options_clone = self.options.clone();
+
+        // Create control flag
+        let control = Arc::new(Mutex::new(true));
+        self.engine_control = Some(Arc::clone(&control));
+
+        // Spawn audio processing thread
+        let handle = thread::spawn(move || {
+            Self::audio_engine_thread(
+                input_device_clone,
+                output_device_clone,
+                options_clone,
+                control,
+            );
+        });
+
+        self.engine_handle = Some(handle);
+        self.is_running = true;
+
+        println!("Audio engine loopback started");
         Ok(())
     }
 
-    pub fn enable_input_stream(&self) -> anyhow::Result<()> {
-        self.audio_engine.start_input_stream()
+    pub fn stop_audio_engine_loopback(&mut self) -> anyhow::Result<()> {
+        if !self.is_running {
+            return Err(anyhow::anyhow!("Audio engine is not running"));
+        }
+
+        // Signal the thread to stop
+        if let Some(ref control) = self.engine_control {
+            if let Ok(mut should_run) = control.lock() {
+                *should_run = false;
+            }
+        }
+
+        // Wait for thread to finish
+        if let Some(handle) = self.engine_handle.take() {
+            handle.join()
+                .map_err(|_| anyhow::anyhow!("Failed to join audio thread"))?;
+        }
+
+        self.engine_control = None;
+        self.is_running = false;
+
+        println!("Audio engine loopback stopped");
+        Ok(())
     }
 
-    pub fn enable_output_stream(&self) -> anyhow::Result<()> {
-        self.audio_engine.start_output_stream()
+    pub fn is_running(&self) -> bool {
+        self.is_running
     }
 
-    pub fn stop_input_stream(&self) -> anyhow::Result<()> {
-        self.audio_engine.stop_input_stream()
-    }
+    fn audio_engine_thread(
+        input_device: AudioDevice,
+        output_device: AudioDevice,
+        options: AudioDeviceOptions,
+        control: Arc<Mutex<bool>>,
+    ) {
+        println!("Audio engine thread started");
 
-    pub fn stop_output_stream(&self) -> anyhow::Result<()> {
-        self.audio_engine.stop_output_stream()
+        // Create the audio engine
+        let audio_engine = match AudioEngine::new(&input_device, &output_device, &options) {
+            Ok(engine) => engine,
+            Err(e) => {
+                eprintln!("Failed to create audio engine: {}", e);
+                return;
+            }
+        };
+
+        // Start the engine
+        if let Err(e) = audio_engine.start() {
+            eprintln!("Failed to start audio engine: {}", e);
+            return;
+        }
+
+        println!("Audio engine started successfully");
+
+        // Keep the engine running until stop signal
+        loop {
+            // Check if we should continue running
+            let should_continue = match control.lock() {
+                Ok(should_run) => *should_run,
+                Err(_) => false, // If mutex is poisoned, stop
+            };
+
+            if !should_continue {
+                break;
+            }
+
+            // Sleep to prevent busy waiting
+            thread::sleep(Duration::from_millis(10));
+        }
+
+        // Stop the engine
+        if let Err(e) = audio_engine.stop() {
+            eprintln!("Failed to stop audio engine: {}", e);
+        }
+
+        println!("Audio engine thread terminated");
     }
-    
 }
 
-
-pub static AUDIO_HANDLER: OnceLock<Mutex<Option<AudioHandler>>> = OnceLock::new();
-pub static STREAM_THREAD: OnceLock<Arc<Mutex<Option<JoinHandle<Result<(), String>>>>>> = OnceLock::new();
+impl Drop for AudioHandler {
+    fn drop(&mut self) {
+        let _ = self.stop_audio_engine_loopback();
+    }
+}

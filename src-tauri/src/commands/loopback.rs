@@ -1,92 +1,47 @@
-// Testing loopback for the audio engine in app
-// THIS IS A TESTTING FILE
-
-use crate::audio::audio_handler::AudioHandler;
-use crate::audio::audio_handler::{AUDIO_HANDLER, STREAM_THREAD};
 use std::sync::{Arc, Mutex};
 use std::thread;
+use std::time::Duration;
+use anyhow::Result;
+use once_cell::sync::Lazy;
+use crate::audio::audio_handler::*;
+use crate::audio::device::*;
 
-#[tauri::command]
-pub fn loopback() -> Result<(), String> {
-    // Sprawdź czy wątek już działa
-    let thread_holder = STREAM_THREAD.get_or_init(|| Arc::new(Mutex::new(None)));
-    {
-        let guard = thread_holder.lock().unwrap();
-        if guard.is_some() {
-            return Ok(()); // Już działa
-        }
-    }
+static AUDIO_HANDLER: Lazy<Arc<Mutex<Option<AudioHandler>>>> = Lazy::new(|| Arc::new(Mutex::new(None)));
 
-    // Spawn nowego wątku dla loopback
-    let handle = thread::spawn(move || -> Result<(), String> {
-        // Zainicjalizuj singleton w wątku
-        let handler_lock = AUDIO_HANDLER.get_or_init(|| Mutex::new(None));
-        let mut guard = handler_lock.lock().unwrap();
+pub fn loopback() -> Result<()> {
+    println!("Starting audio loopback...");
 
-        // Jeśli nie ma silnika, twórz
-        if guard.is_none() {
-            let handler = AudioHandler::new().unwrap();
-            handler.enable_input_stream().map_err(|e| e.to_string())?;
-            handler.enable_output_stream().map_err(|e| e.to_string())?;
-            *guard = Some(handler);
-        }
+    let mut handler = AudioHandler::new();
 
-        // Zwolnij lock żeby inne wątki mogły używać silnika
-        drop(guard);
+    let options = AudioDeviceOptions::new(
+        "default".to_string(),
+        "default".to_string(),
+        "CABLE Input (VB-Audio Virtual Cable)".to_string(),
+        150.0,
+    );
 
-        // Trzymaj wątek przy życiu - czekaj na signal do zatrzymania
-        loop {
-            thread::park();
-            
-            // Sprawdź czy powinniśmy się zatrzymać
-            if let Some(engine_lock) = AUDIO_HANDLER.get() {
-                let guard = engine_lock.lock().unwrap();
-                if guard.is_none() {
-                    break; // Silnik został zatrzymany
-                }
-            }
-        }
+    handler.select_audio_devices(&options)?;
+    handler.start_audio_engine_loopback()?;
 
-        Ok(())
-    });
-
-    // Zapisz handle wątku
-    {
-        let mut guard = thread_holder.lock().unwrap();
-        *guard = Some(handle);
+    if handler.is_running() {
+        println!("Audio loopback is running!");
+        let mut locked = AUDIO_HANDLER.lock().unwrap();
+        *locked = Some(handler);
     }
 
     Ok(())
 }
 
-#[tauri::command]
-pub fn stop_loopback() -> Result<(), String> {
-    // Zatrzymaj silnik
-    if let Some(handler_lock) = AUDIO_HANDLER.get() {
-        let mut guard = handler_lock.lock().unwrap();
-
-        if let Some(engine) = guard.take() {
-            engine.stop_input_stream().map_err(|e| e.to_string())?;
-            engine.stop_output_stream().map_err(|e| e.to_string())?;
-        }
+pub fn stop_loopback() -> Result<()> {
+    let mut locked = AUDIO_HANDLER.lock().unwrap();
+    if let Some(handler) = locked.as_mut() {
+        handler.stop_audio_engine_loopback()?;
+        println!("Audio loopback stopped");
+    } else {
+        println!("No running loopback to stop");
     }
 
-    // Rozbudź i poczekaj na zakończenie wątku
-    if let Some(thread_holder) = STREAM_THREAD.get() {
-        let mut guard = thread_holder.lock().unwrap();
-        if let Some(handle) = guard.take() {
-            // Najpierw rozbudź wątek
-            handle.thread().unpark();
-            
-            // Zwolnij lock przed join
-            drop(guard);
-            
-            // Poczekaj na zakończenie wątku
-            if let Err(e) = handle.join() {
-                eprintln!("Error joining loopback thread: {:?}", e);
-            }
-        }
-    }
+    *locked = None;
 
     Ok(())
 }
