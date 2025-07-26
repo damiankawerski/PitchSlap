@@ -30,7 +30,7 @@ impl AudioHandler {
         self.audio_devices.select_devices_from_options(opt)?;
         self.options = opt.clone();
         Ok(())
-    }
+    } 
 
     pub fn start_audio_engine_loopback(&mut self) -> anyhow::Result<()> {
         if self.is_running {
@@ -100,6 +100,74 @@ impl AudioHandler {
         Ok(())
     }
 
+    pub fn start_audio_engine_throughput(&mut self) -> anyhow::Result<()> {
+        if self.is_running {
+            return Err(anyhow::anyhow!("Audio engine is already running"));
+        }
+
+        // Verify we have required devices
+        let input_device = self.audio_devices.get_input_device()
+            .ok_or_else(|| anyhow::anyhow!("No input device available"))?;
+        let output_device = self.audio_devices.get_virtual_input()
+            .ok_or_else(|| anyhow::anyhow!("No output device available"))?;
+
+        // Clone devices and options for the thread
+        let input_device_clone = AudioDevice::new(
+            input_device.get_device().clone(),
+            input_device.get_config().clone()
+        );
+        let output_device_clone = AudioDevice::new(
+            output_device.get_device().clone(),
+            output_device.get_config().clone()
+        );
+        let options_clone = self.options.clone();
+
+        // Create control flag
+        let control = Arc::new(Mutex::new(true));
+        self.engine_control = Some(Arc::clone(&control));
+
+        // Spawn audio processing thread
+        let handle = thread::spawn(move || {
+            Self::audio_engine_thread(
+                input_device_clone,
+                output_device_clone,
+                options_clone,
+                control,
+            );
+        });
+
+        self.engine_handle = Some(handle);
+        self.is_running = true;
+
+        println!("Audio engine throughput started");
+        Ok(())
+    }
+
+    pub fn stop_audio_engine_throughput(&mut self) -> anyhow::Result<()> {
+        if !self.is_running {
+            return Err(anyhow::anyhow!("Audio engine is not running"));
+        }
+
+        // Signal the thread to stop
+        if let Some(ref control) = self.engine_control {
+            if let Ok(mut should_run) = control.lock() {
+                *should_run = false;
+            }
+        }
+
+        // Wait for thread to finish
+        if let Some(handle) = self.engine_handle.take() {
+            handle.join()
+                .map_err(|_| anyhow::anyhow!("Failed to join audio thread"))?;
+        }
+
+        self.engine_control = None;
+        self.is_running = false;
+
+        println!("Audio engine throughput stopped");
+        Ok(())
+    }
+
     pub fn is_running(&self) -> bool {
         self.is_running
     }
@@ -152,6 +220,8 @@ impl AudioHandler {
 
         println!("Audio engine thread terminated");
     }
+
+
 }
 
 impl Drop for AudioHandler {

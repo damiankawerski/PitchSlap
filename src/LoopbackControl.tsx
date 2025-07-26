@@ -8,10 +8,10 @@ const LoopbackControl = () => {
   const handleLoopbackToggle = async () => {
     try {
       if (!isRunning) {
-        await invoke("loopback");
+        await invoke("throughput"); 
         setIsRunning(true);
       } else {
-        await invoke("stop_loopback"); // zakładam, że też masz coś takiego w backendzie
+        await invoke("stop_throughput"); 
         setIsRunning(false);
       }
       setError(null);
