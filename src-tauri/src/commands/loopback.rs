@@ -15,7 +15,7 @@ pub fn loopback() -> Result<()> {
         "default".to_string(),
         "default".to_string(),
         "CABLE Input (VB-Audio Virtual Cable)".to_string(),
-        5000.0,
+        150.0,
     );
 
     handler.select_audio_devices(&options)?;
