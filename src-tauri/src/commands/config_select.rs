@@ -28,3 +28,12 @@ pub fn set_virtual_device(device_name: String) -> Result<(), String> {
         .set_virtual_input(&device_name)
         .map_err(|e| e.to_string())
 }
+
+#[tauri::command]
+pub fn set_latency(latency: f32) -> Result<(), String> {
+    AudioControls::get_instance()
+        .lock()
+        .map_err(|e| e.to_string())?
+        .set_latency(latency)
+        .map_err(|e| e.to_string())
+}

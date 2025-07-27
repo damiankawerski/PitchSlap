@@ -12,9 +12,14 @@ use std::time::Duration;
 pub struct AudioHandler {
     options: AudioDeviceOptions,
     audio_devices: AudioDeviceManager,
-    engine_handle: Option<JoinHandle<()>>,
-    engine_control: Option<Arc<Mutex<bool>>>, // true = run, false = stop
-    is_running: bool,
+
+    loopback_handle: Option<JoinHandle<()>>,
+    loopback_control: Option<Arc<Mutex<bool>>>, // true = run, false = stop
+    loopback_running: bool,
+
+    throughput_handle: Option<JoinHandle<()>>,
+    throughput_control: Option<Arc<Mutex<bool>>>, // true = run, false = stop
+    throughput_running: bool,
 }
 
 impl AudioHandler {
@@ -23,9 +28,14 @@ impl AudioHandler {
         AudioHandler {
             audio_devices: AudioDeviceManager::new(cpal::default_host()),
             options: options,
-            engine_handle: None,
-            engine_control: None,
-            is_running: false,
+
+            loopback_handle: None,
+            loopback_control: None,
+            loopback_running: false,
+            
+            throughput_handle: None,
+            throughput_control: None,
+            throughput_running: false,
         }
     }
 
@@ -42,8 +52,8 @@ impl AudioHandler {
     } 
 
     pub fn start_audio_engine_loopback(&mut self) -> anyhow::Result<()> {
-        if self.is_running {
-            return Err(anyhow::anyhow!("Audio engine is already running"));
+        if self.loopback_running {
+            return Err(anyhow::anyhow!("Loopback audio engine is already running"));
         }
 
         // Verify we have required devices
@@ -65,7 +75,7 @@ impl AudioHandler {
 
         // Create control flag
         let control = Arc::new(Mutex::new(true));
-        self.engine_control = Some(Arc::clone(&control));
+        self.loopback_control = Some(Arc::clone(&control));
 
         // Spawn audio processing thread
         let handle = thread::spawn(move || {
@@ -77,39 +87,39 @@ impl AudioHandler {
             );
         });
 
-        self.engine_handle = Some(handle);
-        self.is_running = true;
+        self.loopback_handle = Some(handle);
+        self.loopback_running = true;
 
         Ok(())
     }
 
     pub fn stop_audio_engine_loopback(&mut self) -> anyhow::Result<()> {
-        if !self.is_running {
-            return Err(anyhow::anyhow!("Audio engine is not running"));
+        if !self.loopback_running {
+            return Err(anyhow::anyhow!("Loopback audio engine is not running"));
         }
 
         // Signal the thread to stop
-        if let Some(ref control) = self.engine_control {
+        if let Some(ref control) = self.loopback_control {
             if let Ok(mut should_run) = control.lock() {
                 *should_run = false;
             }
         }
 
         // Wait for thread to finish
-        if let Some(handle) = self.engine_handle.take() {
+        if let Some(handle) = self.loopback_handle.take() {
             handle.join()
                 .map_err(|_| anyhow::anyhow!("Failed to join audio thread"))?;
         }
 
-        self.engine_control = None;
-        self.is_running = false;
+        self.loopback_control = None;
+        self.loopback_running = false;
 
         Ok(())
     }
 
     pub fn start_audio_engine_throughput(&mut self) -> anyhow::Result<()> {
-        if self.is_running {
-            return Err(anyhow::anyhow!("Audio engine is already running"));
+        if self.throughput_running {
+            return Err(anyhow::anyhow!("Throughput audio engine is already running"));
         }
 
         // Verify we have required devices
@@ -131,7 +141,7 @@ impl AudioHandler {
 
         // Create control flag
         let control = Arc::new(Mutex::new(true));
-        self.engine_control = Some(Arc::clone(&control));
+        self.throughput_control = Some(Arc::clone(&control));
 
         // Spawn audio processing thread
         let handle = thread::spawn(move || {
@@ -143,38 +153,55 @@ impl AudioHandler {
             );
         });
 
-        self.engine_handle = Some(handle);
-        self.is_running = true;
+        self.throughput_handle = Some(handle);
+        self.throughput_running = true;
 
         Ok(())
     }
 
     pub fn stop_audio_engine_throughput(&mut self) -> anyhow::Result<()> {
-        if !self.is_running {
-            return Err(anyhow::anyhow!("Audio engine is not running"));
+        if !self.throughput_running {
+            return Err(anyhow::anyhow!("Throughput audio engine is not running"));
         }
 
         // Signal the thread to stop
-        if let Some(ref control) = self.engine_control {
+        if let Some(ref control) = self.throughput_control {
             if let Ok(mut should_run) = control.lock() {
                 *should_run = false;
             }
         }
 
         // Wait for thread to finish
-        if let Some(handle) = self.engine_handle.take() {
+        if let Some(handle) = self.throughput_handle.take() {
             handle.join()
                 .map_err(|_| anyhow::anyhow!("Failed to join audio thread"))?;
         }
 
-        self.engine_control = None;
-        self.is_running = false;
+        self.throughput_control = None;
+        self.throughput_running = false;
 
         Ok(())
     }
 
     pub fn is_running(&self) -> bool {
-        self.is_running
+        self.loopback_running || self.throughput_running
+    }
+
+    pub fn is_loopback_running(&self) -> bool {
+        self.loopback_running
+    }
+
+    pub fn is_throughput_running(&self) -> bool {
+        self.throughput_running
+    }
+
+    pub fn get_status(&self) -> String {
+        match (self.loopback_running, self.throughput_running) {
+            (true, true) => "both_running".to_string(),
+            (true, false) => "loopback_running".to_string(),
+            (false, true) => "throughput_running".to_string(),
+            (false, false) => "stopped".to_string(),
+        }
     }
 
     fn audio_engine_thread(
@@ -228,5 +255,6 @@ impl AudioHandler {
 impl Drop for AudioHandler {
     fn drop(&mut self) {
         let _ = self.stop_audio_engine_loopback();
+        let _ = self.stop_audio_engine_throughput();
     }
 }

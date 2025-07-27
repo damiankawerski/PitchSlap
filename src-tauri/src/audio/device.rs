@@ -46,16 +46,16 @@ impl AudioDeviceOptions {
     }
 
     // Getters
-    pub fn get_input_device(&self) -> &String {
-        &self.input_device
+    pub fn get_input_device(&self) -> String {
+        self.input_device.clone()
     }
 
-    pub fn get_output_device(&self) -> &String {
-        &self.output_device
+    pub fn get_output_device(&self) -> String {
+        self.output_device.clone()
     }
 
-    pub fn get_virtual_input(&self) -> &String {
-        &self.virtual_input
+    pub fn get_virtual_input(&self) -> String {
+        self.virtual_input.clone()
     }
 
     pub fn get_latency(&self) -> f32 {

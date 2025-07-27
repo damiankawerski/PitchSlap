@@ -45,6 +45,23 @@ impl AudioControls {
             .unwrap_or_else(|_| vec![])
     }
 
+    // Get current options
+    pub fn get_latency(&self) -> f32 {
+        self.options.get_latency()
+    }
+
+    pub fn get_input_device(&self) -> String {
+        self.options.get_input_device()
+    }
+
+    pub fn get_output_device(&self) -> String {
+        self.options.get_output_device()
+    }
+
+    pub fn get_virtual_input(&self) -> String {
+        self.options.get_virtual_input()
+    }
+
     // Function change options
     pub fn set_input_device(&mut self, device_name: &str) -> anyhow::Result<()> {
         self.options.set_input_device(device_name);
@@ -66,6 +83,7 @@ impl AudioControls {
         self.audio_handler.select_audio_devices(&self.options)
     }
 
+    // Switch audio engine modes
     pub fn start_audio_engine_loopback(&mut self) -> anyhow::Result<()> {
         self.audio_handler.start_audio_engine_loopback()
     }

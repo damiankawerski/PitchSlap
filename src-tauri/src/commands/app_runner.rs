@@ -15,6 +15,11 @@ pub fn run() {
             super::config_select::set_input_device,
             super::config_select::set_output_device,
             super::config_select::set_virtual_device,
+            super::config_select::set_latency,
+            super::config_getter::get_selected_input_device,
+            super::config_getter::get_selected_output_device,
+            super::config_getter::get_selected_virtual_input,
+            super::config_getter::get_latency,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

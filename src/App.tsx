@@ -1,13 +1,15 @@
 import "./App.css";
 import DeviceSetter from "./DeviceSetter";
 import LoopbackControl from "./LoopbackControl";
+import AudioDeviceTester from "./AudioDeviceTester";
 
 function App() {
   return (
     <div>
       <h1>Audio Loopback</h1>
       <LoopbackControl />
-      <DeviceSetter />
+      {/* <DeviceSetter /> */}
+      <AudioDeviceTester />
     </div>
   );
 }
