@@ -30,7 +30,7 @@ impl AudioDeviceOptions {
         AudioDeviceOptions::parse()
     }
 
-    // Constructor to create AudioDeviceOptions from command line arguments - used for changing options at runtime
+    // Constructor to create AudioDeviceOptions from command line arguments - should not be used in production - use default() instead and set options manually
     pub fn new(
         input_device: String,
         output_device: String,
@@ -62,13 +62,24 @@ impl AudioDeviceOptions {
         self.latency
     }
 
-    pub fn log_info(&self) {
-        println!("Audio Device Options:");
-        println!("Input Device: {}", self.input_device);
-        println!("Output Device: {}", self.output_device);
-        println!("Virtual Input Device: {}", self.virtual_input);
-        println!("Latency: {} ms", self.latency);
+    // Setters
+    pub fn set_input_device(&mut self, device: &str) {
+        self.input_device = device.to_string();
     }
+
+    pub fn set_output_device(&mut self, device: &str) {
+        self.output_device = device.to_string();
+    }
+
+    pub fn set_virtual_input(&mut self, device: &str) {
+        self.virtual_input = device.to_string();
+    }
+
+    pub fn set_latency(&mut self, latency: f32) {
+        self.latency = latency;
+    }
+
+
 }
 
 impl Clone for AudioDeviceOptions {
@@ -120,11 +131,6 @@ impl AudioDevice {
         self.config = config;
     }
 
-    pub fn log_info(&self) {
-        println!("Audio Device Info:");
-        println!("Name: {}", self.get_name());
-        println!("Config: {:?}", self.get_config());
-    }
 }
 
 pub struct AudioDeviceManager {
@@ -279,25 +285,6 @@ impl AudioDeviceManager {
         Ok(())
     }
 
-    pub fn log_info(&self) {
-        if let Some(input) = &self.input_device {
-            input.log_info();
-        } else {
-            println!("No input device selected.");
-        }
 
-        if let Some(output) = &self.output_device {
-            output.log_info();
-        } else {
-            println!("No output device selected.");
-        }
-
-        if let Some(virtual_input) = &self.virtual_input {
-            virtual_input.log_info();
-        } else {
-            println!("No virtual input device selected.");
-        }
-    }
 }
 
-// Błąd nie tutaj, to jest gitara

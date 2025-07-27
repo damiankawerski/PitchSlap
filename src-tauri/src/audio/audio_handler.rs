@@ -1,10 +1,13 @@
-use clap::Parser;
-
 use super::device::*;
 use super::engine::*;
 use std::sync::{Arc, Mutex};
 use std::thread::{self, JoinHandle};
 use std::time::Duration;
+
+
+// This could be changed for more complex audio handling
+// This could hold 2 engines - 1 for loopback and 1 for throughput
+// !important - This audiohandler can handle only one stream at a time - no loopback and throughput at the same time
 
 pub struct AudioHandler {
     options: AudioDeviceOptions,
@@ -16,16 +19,22 @@ pub struct AudioHandler {
 
 impl AudioHandler {
     // default host for now
-    pub fn new() -> Self {
+    pub fn new(options: AudioDeviceOptions) -> Self {
         AudioHandler {
             audio_devices: AudioDeviceManager::new(cpal::default_host()),
-            options: AudioDeviceOptions::parse(),
+            options: options,
             engine_handle: None,
             engine_control: None,
             is_running: false,
         }
     }
 
+    // Getter for current audio devices
+    pub fn get_audio_devices(&self) -> &AudioDeviceManager {
+        &self.audio_devices
+    }
+
+    // Use this every time options are changed - make sure to call this after changing options
     pub fn select_audio_devices(&mut self, opt: &AudioDeviceOptions) -> anyhow::Result<()> {
         self.audio_devices.select_devices_from_options(opt)?;
         self.options = opt.clone();
@@ -71,7 +80,6 @@ impl AudioHandler {
         self.engine_handle = Some(handle);
         self.is_running = true;
 
-        println!("Audio engine loopback started");
         Ok(())
     }
 
@@ -96,7 +104,6 @@ impl AudioHandler {
         self.engine_control = None;
         self.is_running = false;
 
-        println!("Audio engine loopback stopped");
         Ok(())
     }
 
@@ -139,7 +146,6 @@ impl AudioHandler {
         self.engine_handle = Some(handle);
         self.is_running = true;
 
-        println!("Audio engine throughput started");
         Ok(())
     }
 
@@ -164,7 +170,6 @@ impl AudioHandler {
         self.engine_control = None;
         self.is_running = false;
 
-        println!("Audio engine throughput stopped");
         Ok(())
     }
 
@@ -178,7 +183,6 @@ impl AudioHandler {
         options: AudioDeviceOptions,
         control: Arc<Mutex<bool>>,
     ) {
-        println!("Audio engine thread started");
 
         // Create the audio engine
         let audio_engine = match AudioEngine::new(&input_device, &output_device, &options) {
@@ -194,8 +198,6 @@ impl AudioHandler {
             eprintln!("Failed to start audio engine: {}", e);
             return;
         }
-
-        println!("Audio engine started successfully");
 
         // Keep the engine running until stop signal
         loop {
@@ -218,7 +220,6 @@ impl AudioHandler {
             eprintln!("Failed to stop audio engine: {}", e);
         }
 
-        println!("Audio engine thread terminated");
     }
 
 

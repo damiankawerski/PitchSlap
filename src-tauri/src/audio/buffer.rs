@@ -14,7 +14,6 @@ pub struct AudioBuffer {
 
     // Consumer (used to read audio data) - for throughput usage
     consumer: <HeapRb<f32> as Split>::Cons,
-
 }
 
 impl AudioBuffer {
@@ -42,6 +41,7 @@ impl AudioBuffer {
     pub fn buffer_write(&mut self, data: &[f32]) -> anyhow::Result<()> {
         let mut output_fell_behind = false;
         for &sample in data {
+            
             if self.producer.try_push(sample).is_err() {
                 output_fell_behind = true;
                 break; 

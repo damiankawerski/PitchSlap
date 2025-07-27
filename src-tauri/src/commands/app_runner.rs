@@ -5,31 +5,18 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .invoke_handler(tauri::generate_handler![
-            loopback,
-            stop_loopback,
-            throughput,
-            stop_throughput,
+            super::switches::loopback,
+            super::switches::stop_loopback,
+            super::switches::throughput,
+            super::switches::stop_throughput,
+            super::devices_lists::get_input_devices_list,
+            super::devices_lists::get_output_devices_list,
+            super::devices_lists::get_virtual_devices_list,
+            super::config_select::set_input_device,
+            super::config_select::set_output_device,
+            super::config_select::set_virtual_device,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
 
-#[tauri::command]
-fn loopback() -> Result<(), String> {
-    super::loopback::loopback().map_err(|e| e.to_string())
-}
-
-#[tauri::command]
-fn stop_loopback() -> Result<(), String> {
-    super::loopback::stop_loopback().map_err(|e| e.to_string())
-}
-
-#[tauri::command]
-fn throughput() -> Result<(), String> {
-    super::loopback::throughput().map_err(|e| e.to_string())
-}
-
-#[tauri::command]
-fn stop_throughput() -> Result<(), String> {
-    super::loopback::stop_throughput().map_err(|e| e.to_string())
-}
