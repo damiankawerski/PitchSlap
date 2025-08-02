@@ -20,4 +20,3 @@ pub fn create_latency_samples(input: &AudioDevice, opt: &AudioDeviceOptions) -> 
     latency_samples
 }
 
-// Tutaj raczej ciężko coś będzie spierdolić, ale kto wie

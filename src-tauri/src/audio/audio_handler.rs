@@ -3,11 +3,7 @@ use super::engine::*;
 use std::sync::{Arc, Mutex};
 use std::thread::{self, JoinHandle};
 use std::time::Duration;
-
-
-// This could be changed for more complex audio handling
-// This could hold 2 engines - 1 for loopback and 1 for throughput
-// !important - This audiohandler can handle only one stream at a time - no loopback and throughput at the same time
+use crate::dsp::modulation_unit::ModulationUnit;
 
 pub struct AudioHandler {
     options: AudioDeviceOptions,
@@ -20,6 +16,8 @@ pub struct AudioHandler {
     throughput_handle: Option<JoinHandle<()>>,
     throughput_control: Option<Arc<Mutex<bool>>>, // true = run, false = stop
     throughput_running: bool,
+
+    modulation_unit: Arc<Mutex<ModulationUnit>>,
 }
 
 impl AudioHandler {
@@ -36,6 +34,8 @@ impl AudioHandler {
             throughput_handle: None,
             throughput_control: None,
             throughput_running: false,
+
+            modulation_unit: Arc::new(Mutex::new(ModulationUnit::new())),
         }
     }
 
@@ -48,9 +48,26 @@ impl AudioHandler {
     pub fn select_audio_devices(&mut self, opt: &AudioDeviceOptions) -> anyhow::Result<()> {
         self.audio_devices.select_devices_from_options(opt)?;
         self.options = opt.clone();
+        // Restart engine if it is running
+        if self.loopback_running {
+            self.stop_audio_engine_loopback()?;
+            self.start_audio_engine_loopback()?;
+        }
+
+        if self.throughput_running {
+            self.stop_audio_engine_throughput()?;
+            self.start_audio_engine_throughput()?;
+        }
+
         Ok(())
     } 
 
+    // Modulation unit access
+    pub fn get_modulation_unit(&self) -> Arc<Mutex<ModulationUnit>> {
+        Arc::clone(&self.modulation_unit)
+    }
+
+    // Start and stop audio engine for loopback mode
     pub fn start_audio_engine_loopback(&mut self) -> anyhow::Result<()> {
         if self.loopback_running {
             return Err(anyhow::anyhow!("Loopback audio engine is already running"));
@@ -76,6 +93,7 @@ impl AudioHandler {
         // Create control flag
         let control = Arc::new(Mutex::new(true));
         self.loopback_control = Some(Arc::clone(&control));
+        let modulation_unit_clone = Arc::clone(&self.modulation_unit);
 
         // Spawn audio processing thread
         let handle = thread::spawn(move || {
@@ -84,6 +102,7 @@ impl AudioHandler {
                 output_device_clone,
                 options_clone,
                 control,
+                modulation_unit_clone,
             );
         });
 
@@ -142,6 +161,7 @@ impl AudioHandler {
         // Create control flag
         let control = Arc::new(Mutex::new(true));
         self.throughput_control = Some(Arc::clone(&control));
+        let modulation_unit_clone = Arc::clone(&self.modulation_unit);
 
         // Spawn audio processing thread
         let handle = thread::spawn(move || {
@@ -150,6 +170,7 @@ impl AudioHandler {
                 output_device_clone,
                 options_clone,
                 control,
+                modulation_unit_clone,
             );
         });
 
@@ -209,10 +230,11 @@ impl AudioHandler {
         output_device: AudioDevice,
         options: AudioDeviceOptions,
         control: Arc<Mutex<bool>>,
+        modulation_unit: Arc<Mutex<ModulationUnit>>,
     ) {
 
         // Create the audio engine
-        let audio_engine = match AudioEngine::new(&input_device, &output_device, &options) {
+        let audio_engine = match AudioEngine::new(&input_device, &output_device, &options, modulation_unit) {
             Ok(engine) => engine,
             Err(e) => {
                 eprintln!("Failed to create audio engine: {}", e);

@@ -23,7 +23,6 @@ impl AudioBuffer {
     pub fn new(buffer_size: usize) -> Self {
         let heap_rb = HeapRb::<f32>::new(buffer_size);
 
-
         let (mut producer, consumer) = heap_rb.split();
 
         // Initialize the producer with zeroes

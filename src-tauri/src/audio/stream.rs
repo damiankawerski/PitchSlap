@@ -4,10 +4,10 @@ use cpal::traits::{DeviceTrait, StreamTrait};
 use cpal::Stream;
 use std::sync::{Arc, Mutex};
 
-
 use super::device::*;
 use super::buffer::*;
 
+use crate::dsp::modulation_unit::ModulationUnit;
 
 pub struct AudioStreams {
     audio_buffer: Arc<Mutex<AudioBuffer>>,
@@ -15,8 +15,9 @@ pub struct AudioStreams {
     output_stream: Stream,
 }
 
+
 impl AudioStreams {
-    pub fn new(input_device: &AudioDevice, output_device: &AudioDevice, buffer_size: usize) -> anyhow::Result<Self> {
+    pub fn new(input_device: &AudioDevice, output_device: &AudioDevice, buffer_size: usize, modulation_unit: Arc<Mutex<ModulationUnit>>) -> anyhow::Result<Self> {
         let audio_buffer = Arc::new(Mutex::new(AudioBuffer::new(buffer_size)));
 
         let buffer_input = Arc::clone(&audio_buffer);
@@ -29,14 +30,14 @@ impl AudioStreams {
             input_device.get_config(),
             move |data: &[f32], _: &cpal::InputCallbackInfo| {
                 if let Ok(mut buffer) = buffer_input.lock() {
-                    // Modify input signal here
-                    if let Err(e) = buffer.buffer_write(data) {
+                    let processed = modulation_unit.lock().unwrap().process(data);
+                    if let Err(e) = buffer.buffer_write(&processed) {
                         eprintln!("Input callback error: {}", e);
                     }
                 }
             },
             error_callback,
-            None, // timeout
+            None,
         )?;
 
         let output_stream = output_device.get_device().build_output_stream(
@@ -49,7 +50,7 @@ impl AudioStreams {
                 }
             },
             error_callback,
-            None, // timeout
+            None,
         )?;
 
         Ok(AudioStreams {
@@ -84,8 +85,7 @@ impl AudioStreams {
     }
 }
 
-
-
 fn error_callback(err: cpal::StreamError) {
     eprintln!("Audio stream error: {}", err);
 }
+
