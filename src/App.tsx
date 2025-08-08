@@ -1,15 +1,10 @@
-import "./App.css";
-import DeviceSetter from "./DeviceSetter";
-import LoopbackControl from "./LoopbackControl";
-import AudioDeviceTester from "./AudioDeviceTester";
+import Layout from "./components/layout/Layout";
+import NavBar from "./components/layout/Navbar";
 
 function App() {
   return (
     <div>
-      <h1>Audio Loopback</h1>
-      <LoopbackControl />
-      {/* <DeviceSetter /> */}
-      <AudioDeviceTester />
+      <Layout/>
     </div>
   );
 }

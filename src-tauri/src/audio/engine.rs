@@ -11,7 +11,7 @@ pub struct AudioEngine {
 }
 
 impl AudioEngine {
-    pub fn new(input_device: &AudioDevice, output_device: &AudioDevice, opt: &AudioDeviceOptions, modulation_unit: Arc<Mutex<ModulationUnit>>) -> anyhow::Result<Self> {
+    pub fn new(input_device: &AudioDevice, output_device: &AudioDevice, opt: &AudioDeviceOptions, modulation_unit: Option<Arc<Mutex<ModulationUnit>>>) -> anyhow::Result<Self> {
         // Verify sample rates match
         verify_sample_rate(&input_device, &output_device)?;
         // Create latency samples based on options
@@ -25,7 +25,6 @@ impl AudioEngine {
 
     pub fn start(&self) -> anyhow::Result<()> {
         // Start input and output streams
-        println!("Starting audio streams...");
         self.streams.start_input_stream()?;
         self.streams.start_output_stream()?;
         Ok(())

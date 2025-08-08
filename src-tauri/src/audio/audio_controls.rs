@@ -99,6 +99,46 @@ impl AudioControls {
     pub fn stop_audio_engine_throughput(&mut self) -> anyhow::Result<()> {
         self.audio_handler.stop_audio_engine_throughput()
     }
+
+    // Audio engine status
+    pub fn is_loopback_running(&self) -> bool {
+        self.audio_handler.is_loopback_running()
+    }
+
+    pub fn is_throughput_running(&self) -> bool {
+        self.audio_handler.is_throughput_running()
+    }
+
+    // Audio modulation controls
+    pub fn enable_modulation(&mut self) -> anyhow::Result<()> {
+        self.audio_handler.enable_modulation()
+    }
+
+    pub fn disable_modulation(&mut self) -> anyhow::Result<()> {
+        self.audio_handler.disable_modulation()
+    }
+
+    pub fn get_effects_list(&self) -> Vec<String> {
+        AudioHandler::get_effects_list()
+    }
+
+    pub fn set_effect(&mut self, effect_name: &str) -> anyhow::Result<()> {
+        self.audio_handler.set_effect_from_string(effect_name)
+    }
+
+    pub fn is_modulation_active(&self) -> bool {
+        self.audio_handler.is_modulation_active()
+    }
+
+    pub fn get_current_effect_name(&self) -> Option<String> {
+        self.audio_handler.get_current_effect_name()
+    }
+
+    pub fn clear_effect(&mut self) -> anyhow::Result<()> {
+        self.audio_handler.clear_effect()?;
+        Ok(())
+    }
+
 }
 
 

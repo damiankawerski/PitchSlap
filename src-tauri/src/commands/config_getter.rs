@@ -42,3 +42,23 @@ pub fn get_latency() -> Result<f32, String> {
             .get_latency()
     )
 }
+
+#[tauri::command]
+pub fn is_loopback_running() -> Result<bool, String> {
+    Ok(
+        AudioControls::get_instance()
+            .lock()
+            .map_err(|e| e.to_string())?
+            .is_loopback_running()
+    )
+}
+
+#[tauri::command]
+pub fn is_throughput_running() -> Result<bool, String> {
+    Ok(
+        AudioControls::get_instance()
+            .lock()
+            .map_err(|e| e.to_string())?
+            .is_throughput_running()
+    )
+}

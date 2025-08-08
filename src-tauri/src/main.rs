@@ -3,9 +3,10 @@
 // use pitchslap_lib::audio::globals::{AUDIO_ENGINE, LOOPBACK_THREAD};
 // use pitchslap_lib::commands::loopback::{loopback, stop_loopback};
 
+use pitchslap_lib::audio::audio_controls::AudioControls;
 
 fn main() -> anyhow::Result<()> {
-    
+    println!("{:?}", AudioControls::get_instance().lock().unwrap().get_effects_list());
     pitchslap_lib::commands::app_runner::run();
     Ok(())
 }

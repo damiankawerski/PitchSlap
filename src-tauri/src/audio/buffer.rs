@@ -9,10 +9,10 @@ use ringbuf::producer::Producer;
 
 // AudioBuffer struct to hold the audio data buffer
 pub struct AudioBuffer {
-    // Producer (used to write audio data) - for throughput usage
+    // Producer (used to write audio data)
     producer: <HeapRb<f32> as Split>::Prod,
 
-    // Consumer (used to read audio data) - for throughput usage
+    // Consumer (used to read audio data)
     consumer: <HeapRb<f32> as Split>::Cons,
 }
 

@@ -1,11 +1,11 @@
 // Stream-related functionality for audio processing
 
-use cpal::traits::{DeviceTrait, StreamTrait};
 use cpal::Stream;
+use cpal::traits::{DeviceTrait, StreamTrait};
 use std::sync::{Arc, Mutex};
 
-use super::device::*;
 use super::buffer::*;
+use super::device::*;
 
 use crate::dsp::modulation_unit::ModulationUnit;
 
@@ -15,9 +15,13 @@ pub struct AudioStreams {
     output_stream: Stream,
 }
 
-
 impl AudioStreams {
-    pub fn new(input_device: &AudioDevice, output_device: &AudioDevice, buffer_size: usize, modulation_unit: Arc<Mutex<ModulationUnit>>) -> anyhow::Result<Self> {
+    pub fn new(
+        input_device: &AudioDevice,
+        output_device: &AudioDevice,
+        buffer_size: usize,
+        modulation_unit: Option<Arc<Mutex<ModulationUnit>>>,
+    ) -> anyhow::Result<Self> {
         let audio_buffer = Arc::new(Mutex::new(AudioBuffer::new(buffer_size)));
 
         let buffer_input = Arc::clone(&audio_buffer);
@@ -25,12 +29,23 @@ impl AudioStreams {
 
         let input_channels = input_device.get_config().channels as usize;
         let output_channels = output_device.get_config().channels as usize;
-        
+
         let input_stream = input_device.get_device().build_input_stream(
             input_device.get_config(),
             move |data: &[f32], _: &cpal::InputCallbackInfo| {
                 if let Ok(mut buffer) = buffer_input.lock() {
-                    let processed = modulation_unit.lock().unwrap().process(data);
+                    let processed = if let Some(ref modulation_unit) = modulation_unit {
+                        match modulation_unit.lock() {
+                            Ok(mut mod_unit) => mod_unit.process(data),
+                            Err(poisoned) => {
+                                eprintln!("⚠️ modulation_unit mutex poisoned — recovering.");
+                                poisoned.into_inner().process(data)
+                            }
+                        }
+                    } else {
+                        data.to_vec()
+                    };
+
                     if let Err(e) = buffer.buffer_write(&processed) {
                         eprintln!("Input callback error: {}", e);
                     }
@@ -88,4 +103,3 @@ impl AudioStreams {
 fn error_callback(err: cpal::StreamError) {
     eprintln!("Audio stream error: {}", err);
 }
-
