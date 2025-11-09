@@ -36,7 +36,7 @@ impl AudioHandler {
             throughput_running: false,
 
             modulation_unit: Some(Arc::new(Mutex::new(ModulationUnit::new(
-                444100.0, // Default sample rate, can be changed later
+                444100, // Default sample rate, can be changed later
             )))),
         }
     }
@@ -64,7 +64,7 @@ impl AudioHandler {
     pub fn select_audio_devices(&mut self, opt: &AudioDeviceOptions) -> anyhow::Result<()> {
         self.audio_devices.select_devices_from_options(opt)?;
         self.options = opt.clone();
-        self.modulation_unit = Some(Arc::new(Mutex::new(ModulationUnit::new(self.audio_devices.get_input_device().unwrap().get_config().sample_rate.0 as f32))));
+        self.modulation_unit = Some(Arc::new(Mutex::new(ModulationUnit::new(self.audio_devices.get_input_device().unwrap().get_config().sample_rate.0 as usize))));
         // Restart engine if it is running
         self.restart()?;
 

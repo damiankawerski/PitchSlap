@@ -10,7 +10,7 @@ pub struct ModulationUnit {
 }
 
 impl ModulationUnit {
-    pub fn new(sample_rate: f32) -> Self {
+    pub fn new(sample_rate: usize) -> Self {
         ModulationUnit {
             audio_processor: AudioProcessor::new(sample_rate),
             current_effect: None,

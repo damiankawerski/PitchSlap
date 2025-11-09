@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { setEffect, getCurrentEffect, clearCurrentEffect } from '../backend_control';
 import DemonEffect from './DemonEffect';
+import TestingVoiceEffect from './TestingEffect';
 
 export function Effects() {
     const [currentEffect, setCurrentEffect] = useState<string | null>(null);
@@ -64,6 +65,12 @@ export function Effects() {
                         onChangeHandler={() => onChangeHandler("DemonVoice")}
                         isActive={currentEffect === "DemonVoice"}
                         slug='DemonVoice'
+                    />
+                    <TestingVoiceEffect
+                        title="Testing Voice"
+                        onChangeHandler={() => onChangeHandler("TestingVoice")}
+                        isActive={currentEffect === "TestingVoice"}
+                        slug='TestingVoice'
                     />
                 </div>
 
