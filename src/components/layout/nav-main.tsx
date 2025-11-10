@@ -46,14 +46,14 @@ export function NavigationMain({ items }: NavigationMainProps) {
                   }`} 
                 />
                 )}
-                <span className={isActive ? 'font-medium' : ''}>
+                <span className={isActive ? '' : ''}>
                   {isActive ? (
                     <GradientText
                       colors={['#40ffaa', '#4079ff']}
                       animationSpeed={3}
                       showBorder={false}
                     >
-                      {item.title}
+                      <span className="font-bold">{item.title}</span>
                     </GradientText>
                   ) : (
                     item.title
