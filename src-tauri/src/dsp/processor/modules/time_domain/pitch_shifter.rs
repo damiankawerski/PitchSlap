@@ -8,34 +8,37 @@ use realfft::num_complex::Complex;
 use std::f32::consts::PI;
 use std::f32::consts::TAU; 
 
+// Stała reprezentująca liczbę zespoloną zero
 const COMPLEX_ZERO: Complex<f32> = Complex::new(0.0, 0.0);
 
 pub struct PitchShifter {
-    forward_fft: RealToComplexEven<f32>,
-    inverse_fft: ComplexToRealEven<f32>,
-    ffft_scratch_len: usize,
-    ifft_scratch_len: usize,
-    fft_scratch: Vec<Complex<f32>>,
-    fft_real: Vec<f32>,
-    fft_cplx: Vec<Complex<f32>>,
+    forward_fft: RealToComplexEven<f32>,       // FFT dla sygnału wejściowego
+    inverse_fft: ComplexToRealEven<f32>,       // Odwrotne FFT
+    ffft_scratch_len: usize,                   // długość scratcha dla FFT
+    ifft_scratch_len: usize,                   // długość scratcha dla IFFT
+    fft_scratch: Vec<Complex<f32>>,            // Bufor tymczasowy dla FFT
+    fft_real: Vec<f32>,                        // Bufor na dane w dziedzinie czasu
+    fft_cplx: Vec<Complex<f32>>,               // Bufor na dane w dziedzinie częstotliwości
 
-    in_fifo: Vec<f32>,
-    out_fifo: Vec<f32>,
+    in_fifo: Vec<f32>,                         // Bufor FIFO wejściowy
+    out_fifo: Vec<f32>,                        // Bufor FIFO wyjściowy
 
-    last_phase: Vec<f32>,
-    phase_sum: Vec<f32>,
-    windowing: Vec<f32>,
-    output_accumulator: Vec<f32>,
-    synthesized_frequency: Vec<f32>,
-    synthesized_magnitude: Vec<f32>,
+    last_phase: Vec<f32>,                      // Fazy z poprzedniej ramki
+    phase_sum: Vec<f32>,                        // Skumulowana faza dla syntezy
+    windowing: Vec<f32>,                        // Okno Hanninga
+    output_accumulator: Vec<f32>,              // Akumulator do overlap-add
+    synthesized_frequency: Vec<f32>,           // Przetworzone częstotliwości
+    synthesized_magnitude: Vec<f32>,           // Przetworzone amplitudy
 
-    frame_size: usize,
-    overlap: usize,
-    sample_rate: usize,
+    frame_size: usize,                          // Rozmiar ramki FFT
+    overlap: usize,                             // Liczba próbek nakładania
+    sample_rate: usize,                         // Częstotliwość próbkowania
 }
 
 impl PitchShifter {
+    // Konstruktor
     pub fn new(window_duration_ms: usize, sample_rate: usize) -> Self {
+        // Obliczenie rozmiaru ramki i zapewnienie parzystej liczby próbek
         let mut frame_size = sample_rate * window_duration_ms / 1000;
         frame_size += frame_size % 2;
         let fs_real = frame_size as f32;
@@ -43,13 +46,16 @@ impl PitchShifter {
         let double_frame_size = frame_size * 2;
         let half_frame_size = (frame_size / 2) + 1;
 
+        // Tworzenie FFT i IFFT
         let mut planner = FftPlanner::new();
         let forward_fft = RealToComplexEven::new(frame_size, &mut planner);
         let inverse_fft = ComplexToRealEven::new(frame_size, &mut planner);
+
         let ffft_scratch_len = forward_fft.get_scratch_len();
         let ifft_scratch_len = inverse_fft.get_scratch_len();
         let scratch_len = ffft_scratch_len.max(ifft_scratch_len);
 
+        // Tworzenie okna Hanninga
         let mut windowing = vec![0.0; frame_size];
         for k in 0..frame_size {
             windowing[k] = -0.5 * (TAU * (k as f32) / fs_real).cos() + 0.5;
@@ -75,20 +81,24 @@ impl PitchShifter {
             synthesized_magnitude: vec![0.0; frame_size],
 
             frame_size,
-            overlap: 0,
+            overlap: 0,     // inicjalizacja overlap
             sample_rate,
         }
     }
 
+    /// Funkcja przesuwająca pitch
+    /// over_sampling: ilość nakładania ramek
+    /// shift: przesunięcie w półtonach (12 półtonów = oktawa)
     pub fn shift_pitch(&mut self, over_sampling: usize, shift: f32, in_b: &[f32], out_b: &mut [f32]) {
+        // Konwersja półtonów na skalę liniową
         let shift = 2.0_f32.powf(shift / 12.0);
         let fs_real = self.frame_size as f32;
         let half_frame_size = (self.frame_size / 2) + 1;
 
-        let step = self.frame_size / over_sampling;
-        let bin_frequencies = self.sample_rate as f32 / fs_real;
-        let expected = TAU / (over_sampling as f32);
-        let fifo_latency = self.frame_size - step;
+        let step = self.frame_size / over_sampling;                 // krok przesuwania ramki
+        let bin_frequencies = self.sample_rate as f32 / fs_real;    // częstotliwość jednej szufladki FFT
+        let expected = TAU / (over_sampling as f32);                // oczekiwana zmiana fazy
+        let fifo_latency = self.frame_size - step;                 // opóźnienie FIFO
 
         if self.overlap == 0 {
             self.overlap = fifo_latency;
@@ -99,25 +109,32 @@ impl PitchShifter {
         let mean_expected = expected / bin_frequencies;
 
         for i in 0..out_b.len() {
+            // Buforowanie wejścia i odczyt wyjścia
             self.in_fifo[self.overlap] = in_b[i];
             out_b[i] = self.out_fifo[self.overlap - fifo_latency];
             self.overlap += 1;
+
+            // Przetwarzanie pełnej ramki
             if self.overlap >= self.frame_size {
                 self.overlap = fifo_latency;
 
+                // Okno Hanninga
                 for k in 0..self.frame_size {
                     self.fft_real[k] = self.in_fifo[k] * self.windowing[k];
                 }
 
+                // FFT
                 let _ = self.forward_fft.process_with_scratch(
                     &mut self.fft_real,
                     &mut self.fft_cplx,
                     &mut self.fft_scratch[..self.ffft_scratch_len],
                 );
 
+                // Resetowanie widma syntezowanego
                 self.synthesized_magnitude.fill(0.0);
                 self.synthesized_frequency.fill(0.0);
 
+                // Analiza fazy i przesunięcie częstotliwości
                 for k in 0..half_frame_size {
                     let k_real = k as f32;
                     let index = (k_real * shift).round() as usize;
@@ -126,6 +143,7 @@ impl PitchShifter {
                         let mut delta_phase = (phase - self.last_phase[k]) - k_real * expected;
                         let mut qpd = (delta_phase / PI) as i64;
 
+                        // Korekcja fazy (wrap-around)
                         if qpd >= 0 {
                             qpd += qpd & 1;
                         } else {
@@ -134,6 +152,8 @@ impl PitchShifter {
 
                         delta_phase -= PI * qpd as f32;
                         self.last_phase[k] = phase;
+
+                        // Synteza widma
                         self.synthesized_magnitude[index] += magnitude;
                         self.synthesized_frequency[index] = k_real * pitch_weight + oversamp_weight * delta_phase;
                     }
@@ -141,9 +161,9 @@ impl PitchShifter {
 
                 self.fft_cplx.fill(COMPLEX_ZERO);
 
+                // Rekonstrukcja sygnału w dziedzinie zespolonej
                 for k in 0..half_frame_size {
                     self.phase_sum[k] += mean_expected * self.synthesized_frequency[k];
-
                     let (sin, cos) = self.phase_sum[k].sin_cos(); 
                     let magnitude = self.synthesized_magnitude[k];
 
@@ -151,14 +171,15 @@ impl PitchShifter {
                     self.fft_cplx[k].re = cos * magnitude;
                 }
 
+                // Odwrotne FFT
                 let _ = self.inverse_fft.process_with_scratch(
                     &mut self.fft_cplx,
                     &mut self.fft_real,
                     &mut self.fft_scratch[..self.ifft_scratch_len],
                 );
 
+                // Overlap-add
                 let acc_oversamp: f32 = 2.0 / (half_frame_size * over_sampling) as f32;
-
                 for k in 0..self.frame_size {
                     let product = self.windowing[k] * self.fft_real[k] * acc_oversamp;
                     self.output_accumulator[k] += product / 2.0;

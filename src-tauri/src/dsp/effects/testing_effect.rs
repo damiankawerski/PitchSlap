@@ -14,7 +14,7 @@ impl TestingVoice {
 impl AudioEffect for TestingVoice {
 
     fn process(&mut self, input: &[f32], processor: &mut AudioProcessor) -> Vec<f32> {
-    if let Some(output) = processor.process_formant_shift(input) {
+    if let Some(output) = processor.process_pitch_shift(input) {
         output.to_vec()
     } else {
         Vec::new()

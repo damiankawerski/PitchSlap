@@ -28,7 +28,7 @@ impl AudioProcessor {
         if self.input_accumulator.len() >= self.frame_size {
             let frame = self.input_accumulator.drain(..self.frame_size).collect::<Vec<_>>();
             self.pitch_shifter
-                .shift_pitch(2, -5.0, &frame, &mut self.buffer);
+                .shift_pitch(2, -4.0, &frame, &mut self.buffer);
 
             Some(&self.buffer)
         } else {
