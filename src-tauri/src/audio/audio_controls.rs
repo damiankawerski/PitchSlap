@@ -139,6 +139,15 @@ impl AudioControls {
         Ok(())
     }
 
+    // App handle 
+
+    pub fn set_app_handle(&mut self, handle: tauri::AppHandle) -> anyhow::Result<()> {
+      self.audio_handler.set_app_handle(handle)
+    }
+
+    pub fn clear_app_handle(&mut self) -> anyhow::Result<()> {
+      self.audio_handler.clear_app_handle()
+    }
 }
 
 

@@ -7,6 +7,7 @@ pub struct ModulationUnit {
     audio_processor: AudioProcessor,
     current_effect: Option<Box<dyn AudioEffect>>,
     is_active: bool,
+    app_handle: Option<tauri::AppHandle>,
 }
 
 impl ModulationUnit {
@@ -15,6 +16,7 @@ impl ModulationUnit {
             audio_processor: AudioProcessor::new(sample_rate),
             current_effect: None,
             is_active: false,
+            app_handle: None,
         }
     }
 
@@ -61,5 +63,22 @@ impl ModulationUnit {
 
     pub fn is_active(&self) -> bool {
         self.is_active
+    }
+
+    pub fn set_app_handle(&mut self, handle: tauri::AppHandle) {
+        self.app_handle = Some(handle);
+    }
+
+    pub fn clear_app_handle(&mut self) {
+        self.app_handle = None;
+    }
+
+    pub fn process_and_send(&mut self, input: &[f32]) -> Vec<f32> {
+        if let Some(ref handle) = self.app_handle {
+            self.audio_processor.process_and_send_fft(input, handle);
+            input.to_vec()
+        } else {
+            input.to_vec()
+        }
     }
 }

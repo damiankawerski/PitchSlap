@@ -29,6 +29,8 @@ pub fn run() {
             super::modulation_conf::is_modulation_active,
             super::modulation_conf::get_current_effect_name,
             super::modulation_conf::clear_effect,
+            super::visualizer::initialize_audio,
+            super::visualizer::deinitialize_audio,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

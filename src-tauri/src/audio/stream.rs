@@ -36,7 +36,12 @@ impl AudioStreams {
                 if let Ok(mut buffer) = buffer_input.lock() {
                     let processed = if let Some(ref modulation_unit) = modulation_unit {
                         match modulation_unit.lock() {
-                            Ok(mut mod_unit) => mod_unit.process(data),
+                            Ok(mut mod_unit) => {
+                                // Here apply modulation effects
+                                // Now implementing fft visualizer so off
+                                // mod_unit.process(data)
+                                mod_unit.process_and_send(data)
+                            },
                             Err(poisoned) => {
                                 eprintln!("⚠️ modulation_unit mutex poisoned — recovering.");
                                 poisoned.into_inner().process(data)
