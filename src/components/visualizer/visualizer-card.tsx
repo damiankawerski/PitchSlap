@@ -2,10 +2,11 @@ import { useEffect, useRef, useState } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
 
-interface AudioSpectrum {
-  magnitudes: number[];
+interface AudioFrame {
+  rms: number;
+  pitch: number;
+  spectrum: number[];
   frequencies: number[];
-  sample_rate: number;
   timestamp: number;
 }
 
@@ -81,16 +82,16 @@ export function AudioSpectrumVisualizer() {
   };
 
   // Rysowanie spektrum
-  const drawSpectrum = (spectrum: AudioSpectrum) => {
+  const drawSpectrum = (frame: AudioFrame) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    console.log(spectrum)
+    console.log(frame)
 
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    const { magnitudes, frequencies } = spectrum;
+    const { spectrum: magnitudes, frequencies } = frame;
     const width = canvas.width;
     const height = canvas.height;
 
@@ -178,7 +179,7 @@ export function AudioSpectrumVisualizer() {
     let unlisten: (() => void) | undefined;
 
     const setupListener = async () => {
-      unlisten = await listen<AudioSpectrum>('audio-spectrum', (event) => {
+      unlisten = await listen<AudioFrame>('audio-spectrum', (event) => {
         console.log(event)
         drawSpectrum(event.payload);
       });

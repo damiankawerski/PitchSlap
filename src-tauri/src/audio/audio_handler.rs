@@ -114,48 +114,6 @@ impl AudioHandler {
         Ok(())
     }
 
-    pub fn get_effects_list() -> Vec<String> {
-        ModulationUnit::get_effects_list()
-    }
-
-    pub fn set_effect_from_string(&mut self, effect_name: &str) -> anyhow::Result<()> {
-        if let Some(ref unit) = self.modulation_unit {
-            let mut unit = unit.lock().unwrap();
-            unit.set_from_string(effect_name);
-        }
-        self.restart()?;
-
-        Ok(())
-    }
-
-    pub fn is_modulation_active(&self) -> bool {
-        if let Some(ref unit) = self.modulation_unit {
-            let unit = unit.lock().unwrap();
-            unit.is_active()
-        } else {
-            false
-        }
-    }
-    
-    pub fn get_current_effect_name(&self) -> Option<String> {
-        if let Some(ref unit) = self.modulation_unit {
-            let unit = unit.lock().unwrap();
-            unit.get_current_effect_name()
-        } else {
-            None
-        }
-    }
-
-    pub fn clear_effect(&mut self) -> anyhow::Result<()> {
-        if let Some(ref unit) = self.modulation_unit {
-            let mut unit = unit.lock().unwrap();
-            unit.clear_effect();
-        }
-        self.restart()?;
-
-        Ok(())
-    }
-
     // Start and stop audio engine for loopback mode
     pub fn start_audio_engine_loopback(&mut self) -> anyhow::Result<()> {
         if self.loopback_running {
