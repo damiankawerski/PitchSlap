@@ -41,7 +41,7 @@ impl AudioStreams {
                                 // Now implementing fft visualizer so off
                                 // mod_unit.process(data)
                                 let _ = mod_unit.process_and_send(data);
-                                data.to_vec()
+                                mod_unit.test_processing(data)
                             },
                             Err(poisoned) => {
                                 eprintln!("⚠️ modulation_unit mutex poisoned — recovering.");

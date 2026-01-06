@@ -37,5 +37,7 @@ impl ModulationUnit {
         Ok(())
     }
 
-
+    pub fn test_processing(&mut self, input: &[f32]) -> Vec<f32> {
+        self.audio_processor.test_processing(input)
+    }
 }

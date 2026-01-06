@@ -79,6 +79,8 @@ impl SpectrumVisualizer {
           })
           .collect();
 
+          let spec = self.normalize(&magnitudes);
+
         let frequencies: Vec<f32> = (0..spectrum.len())
             .map(|i| (i as f32 * self.sample_rate as f32) / self.fft_size as f32)
             .collect();
@@ -96,7 +98,7 @@ impl SpectrumVisualizer {
         Ok(AudioFrame::new(
             rms,
             pitch,
-            magnitudes,
+            spec,
             frequencies,
             timestamp,
         ))
