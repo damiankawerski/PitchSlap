@@ -4,7 +4,7 @@ use super::audio_spectrum::*;
 use realfft::RealFftPlanner;
 use rustfft::num_complex::Complex;
 use std::sync::{Arc, Mutex};
-use std::time::{Duration};
+use std::time::{Duration, Instant};
 
 use crate::dsp::utils::*;
 
@@ -13,6 +13,7 @@ pub struct SpectrumVisualizer {
   fft_size: usize,
   sample_rate: usize,
   throttle_interval: Duration,
+  last_emit: Arc<Mutex<Instant>>,
 }
 
 impl SpectrumVisualizer {
@@ -22,12 +23,13 @@ impl SpectrumVisualizer {
             fft_size,
             sample_rate,
             throttle_interval: Duration::from_millis(1000 / fps as u64),
+            last_emit: Arc::new(Mutex::new(Instant::now())),
         }
     }
 
     fn normalize(&self, magnitudes_db: &[f32]) -> Vec<f32> {
         let min_db = -80.0;
-        let max_db = 0.0;
+        let max_db = 80.0;
 
         magnitudes_db
             .iter()
@@ -79,7 +81,7 @@ impl SpectrumVisualizer {
           })
           .collect();
 
-          let spec = self.normalize(&magnitudes);
+        let spec = self.normalize(&magnitudes);
 
         let frequencies: Vec<f32> = (0..spectrum.len())
             .map(|i| (i as f32 * self.sample_rate as f32) / self.fft_size as f32)
@@ -115,12 +117,22 @@ impl SpectrumVisualizer {
             return Ok(());
         }
 
+        // Sprawdź throttling - czy minął wymagany czas od ostatniej emisji
+        let mut last_emit = self.last_emit.lock().unwrap();
+        let now = Instant::now();
+        // if now.duration_since(*last_emit) < self.throttle_interval {
+        //     return Ok(()); // Pomiń tę ramkę
+        // }
+
         // Oblicz FFT (compute_fft teraz oblicza też deltę)
         let spectrum = self.compute_fft(&processed[..self.fft_size])?;
         println!("Computed spectrum frame at timestamp: {:?}", spectrum.frequencies);
 
         // Wyślij do frontendu (spectrum zawiera magnitudes + delta)
         app_handle.emit("audio-spectrum", &spectrum)?;
+
+        // Zaktualizuj czas ostatniej emisji
+        *last_emit = now;
 
         Ok(())
     }

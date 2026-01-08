@@ -1,6 +1,7 @@
 import { invoke } from '@tauri-apps/api/core';
 
-export async function setInputDeviceInvoke(deviceName: string) {
+
+export async function setInputDevice(deviceName: string) {
   try {
     await invoke('set_input_device', { deviceName });
   } catch (error) {
@@ -8,7 +9,7 @@ export async function setInputDeviceInvoke(deviceName: string) {
   }
 }
 
-export async function setOutputDeviceInvoke(deviceName: string) {
+export async function setOutputDevice(deviceName: string) {
   try {
     await invoke('set_output_device', { deviceName });
   } catch (error) {
@@ -16,7 +17,7 @@ export async function setOutputDeviceInvoke(deviceName: string) {
   }
 }
 
-export async function setVirtualDeviceInvoke(deviceName: string) {
+export async function setVirtualDevice(deviceName: string) {
   try {
     await invoke('set_virtual_device', { deviceName });
   } catch (error) {
@@ -24,7 +25,7 @@ export async function setVirtualDeviceInvoke(deviceName: string) {
   }
 }
 
-export async function setLatencyInvoke(latency: number) {
+export async function setLatency(latency: number) {
   try {
     await invoke('set_latency', { latency });
   } catch (error) {

@@ -1,4 +1,3 @@
-'use client'
 import { type LucideIcon } from 'lucide-react'
 import { Link, useRouterState } from '@tanstack/react-router'
 
@@ -7,7 +6,7 @@ import {
   SidebarMenuItem,
   SidebarMenuButton,
 } from '@/components/ui/sidebar';
-import GradientText from '../GradientText';
+import GradientText from '../bits/GradientText';
 
 interface NavItem {
   title: string,

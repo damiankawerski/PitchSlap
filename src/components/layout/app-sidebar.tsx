@@ -1,5 +1,3 @@
-'use client';
-
 import {
   SidebarContent,
   SidebarFooter,
@@ -13,7 +11,7 @@ import {
 import { Home, Settings, Sparkles } from 'lucide-react';
 import { NAVIGATION } from '@/lib/consts/navigation';
 import { NavigationMain } from './nav-main';
-import GradientText from '../GradientText';
+import GradientText from '../bits/GradientText';
 import { QuickActions } from './quick-actions';
 
 export function AppSidebar() {
