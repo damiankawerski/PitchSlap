@@ -1,5 +1,5 @@
-pub mod processor;
 pub mod modulation_unit;
-pub mod effect_trait;
-pub mod effects;
-pub mod effect_factory;
+pub mod traits;
+pub mod modules;
+pub mod processor;
+pub mod utils;

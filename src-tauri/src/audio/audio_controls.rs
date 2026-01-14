@@ -118,27 +118,15 @@ impl AudioControls {
         self.audio_handler.disable_modulation()
     }
 
-    pub fn get_effects_list(&self) -> Vec<String> {
-        AudioHandler::get_effects_list()
+    // App handle 
+
+    pub fn set_app_handle(&mut self, handle: tauri::AppHandle) -> anyhow::Result<()> {
+      self.audio_handler.set_app_handle(handle)
     }
 
-    pub fn set_effect(&mut self, effect_name: &str) -> anyhow::Result<()> {
-        self.audio_handler.set_effect_from_string(effect_name)
+    pub fn clear_app_handle(&mut self) -> anyhow::Result<()> {
+      self.audio_handler.clear_app_handle()
     }
-
-    pub fn is_modulation_active(&self) -> bool {
-        self.audio_handler.is_modulation_active()
-    }
-
-    pub fn get_current_effect_name(&self) -> Option<String> {
-        self.audio_handler.get_current_effect_name()
-    }
-
-    pub fn clear_effect(&mut self) -> anyhow::Result<()> {
-        self.audio_handler.clear_effect()?;
-        Ok(())
-    }
-
 }
 
 

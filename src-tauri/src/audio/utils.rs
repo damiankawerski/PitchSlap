@@ -1,6 +1,5 @@
 // Utility functions for audio processing
 
-
 use super::device::*;
 
 pub fn verify_sample_rate(input: &AudioDevice, output: &AudioDevice) -> anyhow::Result<()> {
@@ -19,4 +18,3 @@ pub fn create_latency_samples(input: &AudioDevice, opt: &AudioDeviceOptions) -> 
 
     latency_samples
 }
-
