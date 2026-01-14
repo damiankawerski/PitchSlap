@@ -16,7 +16,7 @@ pub struct AudioDeviceOptions {
     output_device: String,
 
     // VB-Cable audio device to use (for passthrough) Please ensure that VB-Cable is installed (This reads data from buffer and writes it to VB-Cable)
-    #[arg(short = 'v', long, value_name = "VB", default_value_t = String::from("CABLE Input (VB-Audio Virtual Cable)"))]
+    #[arg(short = 'v', long, value_name = "VB", default_value_t = String::from("default"))]
     virtual_input: String, // This is the VB-Cable output device
 
     // Latency in seconds between input and output devices (default is 150ms)
@@ -78,8 +78,6 @@ impl AudioDeviceOptions {
     pub fn set_latency(&mut self, latency: f32) {
         self.latency = latency;
     }
-
-
 }
 
 impl Clone for AudioDeviceOptions {
@@ -130,7 +128,6 @@ impl AudioDevice {
     pub fn set_config(&mut self, config: cpal::StreamConfig) {
         self.config = config;
     }
-
 }
 
 pub struct AudioDeviceManager {
@@ -152,7 +149,9 @@ impl AudioDeviceManager {
 
     pub fn default() -> Self {
         let mut manager = AudioDeviceManager::new(cpal::default_host());
-        manager.select_devices_from_options(&AudioDeviceOptions::default()).unwrap();
+        manager
+            .select_devices_from_options(&AudioDeviceOptions::default())
+            .unwrap();
         manager
     }
 
@@ -219,6 +218,7 @@ impl AudioDeviceManager {
                 d.name()
                     .unwrap_or_default()
                     .contains("VB-Audio Virtual Cable")
+                    || d.name().unwrap_or_default().contains("BlackHole")
             })
             .map(|d| d.name().unwrap_or_default());
 
@@ -242,7 +242,6 @@ impl AudioDeviceManager {
         Ok(())
     }
 
-    
     pub fn select_output_device(&mut self, name: &str) -> anyhow::Result<()> {
         let mut result: Option<Device> = None;
         if name == "default" {
@@ -284,7 +283,4 @@ impl AudioDeviceManager {
         self.select_virtual_input(&options.get_virtual_input())?;
         Ok(())
     }
-
-
 }
-

@@ -22,7 +22,7 @@ export async function getSelectedOutputDevice() {
 
 export async function getSelectedVirtualDevice() {
   try {
-    const deviceName: string = await invoke('get_selected_virtual_device');
+    const deviceName: string = await invoke('get_selected_virtual_input');
     return deviceName;
   } catch (error) {
     console.error('Error invoking get_selected_virtual_device:', error);

@@ -9,7 +9,7 @@ interface TransparentCardProps {
 
 export function TransparentCard({ children, description = '', title = '', className = '' }: TransparentCardProps) {
   return (
-    <Card className={`bg-card/60 backdrop-blur ${className}`}>
+    <Card className={`backdrop-blur-3xl border-none text-secondary ${className}`}>
       <CardHeader>
         <CardTitle>{title}</CardTitle>
         <CardDescription>{description}</CardDescription>

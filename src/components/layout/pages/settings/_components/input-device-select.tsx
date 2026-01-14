@@ -2,6 +2,7 @@ import { setInputDevice } from "@/lib/invokes/config-setters";
 import { getSelectedInputDevice, getAvailableInputDevices } from "@/lib/invokes/config-getters";
 import { useEffect, useState } from "react";
 import { CommonSettingsSelector } from "@/components/controls/selectors/common-settings-select";
+import { Mic } from "lucide-react";
 export function InputDeviceSelect() {
 
   const [devices, setDevices] = useState<string[]>([]);
@@ -29,6 +30,7 @@ export function InputDeviceSelect() {
       value={selectedDevice || undefined}
       onChange={handleChange}
       placeholder="Select Input Device"
+      icon={Mic}
     />
   );
 }

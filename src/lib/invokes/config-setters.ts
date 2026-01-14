@@ -16,6 +16,7 @@ export async function setOutputDevice(deviceName: string) {
     console.error('Error invoking set_output_device:', error);
   }
 }
+//test
 
 export async function setVirtualDevice(deviceName: string) {
   try {

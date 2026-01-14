@@ -1,4 +1,3 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { InputDeviceSelect } from "./_components/input-device-select";
 import { OutputDeviceSelect } from "./_components/output-device-select";
@@ -10,7 +9,7 @@ import { TransparentCard } from "@/components/ui/transparent-card";
 
 export default function SettingsPage() {
   return (
-    <div className="min-h-screen w-full overflow-y-auto">
+    <div className="w-full">
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 p-6 lg:p-10">
         <header className="flex flex-col gap-2">
           <PageTitle title="Settings" icon={Settings}/>
