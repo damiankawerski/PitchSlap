@@ -36,7 +36,7 @@ impl ModulationUnit {
                 Ok(input.to_vec())
             }
         } else {
-            Err(anyhow::anyhow!("App handle not set for ModulationUnit"))
+            Ok(input.to_vec())
         }
     }
 }

@@ -7,6 +7,8 @@ use super::modules::chains::filters_chain::*;
 use super::modules::chains::modulation_chain::*;
 use super::traits::{EffectChain, FilterChain};
 use super::modules::phase_vocoder::pitch_shifter::*;
+use super::modules::auto_tune::auto_tune::*;
+use super::modules::fundsp::reverb::FundspReverb;
 
 pub struct AudioProcessor {
     fft_visualizer: SpectrumVisualizer,
@@ -34,12 +36,22 @@ impl AudioProcessor {
         filters_chain.append_filter(Box::new(moving_average));
 
         let mut modulation_chain = ModulationChain::new();
-        modulation_chain.append_effect(Box::new(PitchShifter::new(
-            40,
-            sample_rate,
-            4.0,
-            4,
+        // modulation_chain.append_effect(Box::new(PitchShifter::new(
+        //     40,
+        //     sample_rate,
+        //     4.0,
+        //     4,
+        // )));
+        modulation_chain.append_effect(Box::new(AutoTune::new(sample_rate as f32)));
+
+        modulation_chain.append_effect(Box::new(FundspReverb::new(
+            sample_rate as f32,
+            0.85,  // room_size - large room
+            4.0,   // time - long decay
+            0.25,  // damping - minimal damping for bright reverb
+            0.7,   // mix - 70% wet signal
         )));
+
         
         AudioProcessor {
             fft_visualizer: SpectrumVisualizer::new(sample_rate, 480, 30),

@@ -80,9 +80,6 @@ impl AudioStreams {
             None,
         )?;
 
-
-        println!("{:?}", input_device.get_device().default_input_config()?);
-        println!("{:?}", output_device.get_device().default_output_config()?);
         Ok(AudioStreams {
             audio_buffer,
             input_stream,

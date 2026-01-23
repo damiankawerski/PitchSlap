@@ -126,9 +126,6 @@ impl SpectrumVisualizer {
 
         // Oblicz FFT (compute_fft teraz oblicza też deltę)
         let spectrum = self.compute_fft(&processed[..self.fft_size])?;
-        println!("Computed spectrum frame at timestamp: {:?}", spectrum.frequencies);
-
-        // Wyślij do frontendu (spectrum zawiera magnitudes + delta)
         app_handle.emit("audio-spectrum", &spectrum)?;
 
         // Zaktualizuj czas ostatniej emisji
