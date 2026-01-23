@@ -28,16 +28,15 @@ impl ModulationUnit {
         self.is_active = active;
     }
 
-    pub fn process_and_send(&mut self, input: &[f32]) -> anyhow::Result<()> {
-        if self.is_active {
-            if let Some(ref handle) = self.app_handle {
-                self.audio_processor.process_and_send(input, handle)?;
+    pub fn process_and_send(&mut self, input: &[f32]) -> anyhow::Result<Vec<f32>> {
+        if let Some(ref handle) = self.app_handle {
+            if self.is_active {
+                Ok(self.audio_processor.process_and_send(input, handle))
+            } else {
+                Ok(input.to_vec())
             }
+        } else {
+            Err(anyhow::anyhow!("App handle not set for ModulationUnit"))
         }
-        Ok(())
-    }
-
-    pub fn test_processing(&mut self, input: &[f32]) -> Vec<f32> {
-        self.audio_processor.test_processing(input)
     }
 }

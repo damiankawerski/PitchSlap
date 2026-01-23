@@ -40,12 +40,18 @@ impl AudioStreams {
                                 // Here apply modulation effects
                                 // Now implementing fft visualizer so off
                                 // mod_unit.process(data)
-                                let _ = mod_unit.process_and_send(data);
-                                mod_unit.test_processing(data)
+
+                                mod_unit.process_and_send(data).unwrap_or_else(|e| {
+                                    eprintln!("Error processing modulation unit: {}", e);
+                                    Vec::new()
+                                })
                             },
                             Err(poisoned) => {
                                 eprintln!("⚠️ modulation_unit mutex poisoned — recovering.");
-                                Vec::new()
+                                poisoned.into_inner().process_and_send(data).unwrap_or_else(|e| {
+                                    eprintln!("Error processing modulation unit: {}", e);
+                                    Vec::new()
+                                })
                             }
                         }
                     } else {
@@ -74,6 +80,9 @@ impl AudioStreams {
             None,
         )?;
 
+
+        println!("{:?}", input_device.get_device().default_input_config()?);
+        println!("{:?}", output_device.get_device().default_output_config()?);
         Ok(AudioStreams {
             audio_buffer,
             input_stream,
