@@ -80,7 +80,7 @@ impl Vocoder {
 		effect.env_floor = 0.0025;
 		effect.soft_clip = 1.8;
 		effect.reverb_mix = 0.1;
-		effect.carrier_base_freq = 110.0;
+		effect.carrier_base_freq = 300.0;
 		effect.carrier_harmonics = 20;
 		effect.carrier_gain = 0.22;
 		effect.rebuild();

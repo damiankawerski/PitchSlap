@@ -6,6 +6,8 @@ pub mod reverb;
 pub mod harmonics;
 pub mod chorus;
 pub mod vocoder;
+pub mod auto_tune;
+pub mod pitch_shifter;
 
 pub use vibrato::Vibrato;
 pub use bitcrusher::Bitcrusher;
@@ -15,3 +17,5 @@ pub use reverb::Reverb;
 pub use harmonics::Harmonics;
 pub use chorus::Chorus;
 pub use vocoder::Vocoder;
+pub use auto_tune::AutoTune;
+pub use pitch_shifter::PitchShifter;
