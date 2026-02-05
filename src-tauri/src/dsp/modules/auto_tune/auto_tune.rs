@@ -1,5 +1,5 @@
 use crate::dsp::traits::EffectModule;
-use super::pitch_shifter::PitchShifter;
+use crate::dsp::modules::phase_vocoder::pitch_shifter::*;
 use std::collections::VecDeque;
 use pitch_detection::detector::PitchDetector;
 use pitch_detection::detector::yin::YINDetector;
@@ -152,11 +152,15 @@ impl EffectModule for AutoTune {
         self.pitch_shifter.process(in_b, out_b);
     }
 
-    fn reset_state(&mut self) {
+    fn reset(&mut self) {
         self.detection_buffer.clear();
         self.current_shift = 0.0;
         self.last_valid_shift = 0.0;
         self.sustain_counter = 0;
-        self.pitch_shifter.reset_state();
+        self.pitch_shifter.reset();
+    }
+
+    fn name(&self) -> &str {
+        "auto_tune"
     }
 }

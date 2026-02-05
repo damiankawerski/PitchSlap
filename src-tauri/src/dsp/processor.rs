@@ -1,14 +1,16 @@
-use super::modules::visualizer::fft_visualizer::*;
-use super::modules::filters::biquad::*;
-use super::modules::filters::moving_average::*;
-use super::modules::filters::de_esser::*;
-use super::modules::filters::noise_gate::*;
+#![allow(dead_code)]
+
+
+
+
 use super::modules::chains::filters_chain::*;
 use super::modules::chains::modulation_chain::*;
+
+use super::modules::visualizer::fft_visualizer::*;
+
 use super::traits::{EffectChain, FilterChain};
-use super::modules::phase_vocoder::pitch_shifter::*;
-use super::modules::auto_tune::auto_tune::*;
-use super::modules::fundsp::reverb::FundspReverb;
+use crate::dsp::modules::effects::*;
+
 
 pub struct AudioProcessor {
     fft_visualizer: SpectrumVisualizer,
@@ -16,47 +18,15 @@ pub struct AudioProcessor {
     modulation_chain: ModulationChain,
 }
 
-
 impl AudioProcessor {
     pub fn new(sample_rate: usize) -> Self {
-        // Default chain parameters
-        let hp_coeffs = highpass_coeffs(sample_rate as f32, 80.0, 0.707);
-        let notch_coeffs = notch_coeffs(sample_rate as f32, 3000.0, 10.0);
-        let lp_coeffs = lowpass_coeffs(sample_rate as f32, 12000.0, 0.707);
-
-        let noise_gate = NoiseGate::new(-35.0, 2.0, 30.0, sample_rate as f32);
-        let de_esser = DeEsser::new(sample_rate as f32, -20.0, 3.0);
-        let moving_average = MovingAverageFilter::new(2);
-        let mut filters_chain = FiltersChain::new();
-        filters_chain.append_filter(Box::new(BiquadFilter::new(hp_coeffs)));
-        filters_chain.append_filter(Box::new(BiquadFilter::new(notch_coeffs)));
-        filters_chain.append_filter(Box::new(noise_gate));
-        filters_chain.append_filter(Box::new(de_esser));
-        filters_chain.append_filter(Box::new(BiquadFilter::new(lp_coeffs)));
-        filters_chain.append_filter(Box::new(moving_average));
-
         let mut modulation_chain = ModulationChain::new();
-        // modulation_chain.append_effect(Box::new(PitchShifter::new(
-        //     40,
-        //     sample_rate,
-        //     4.0,
-        //     4,
-        // )));
-        modulation_chain.append_effect(Box::new(AutoTune::new(sample_rate as f32)));
+        modulation_chain.append_effect(Box::new(Vocoder::daft_punk(sample_rate)));
 
-        modulation_chain.append_effect(Box::new(FundspReverb::new(
-            sample_rate as f32,
-            0.85,  // room_size - large room
-            4.0,   // time - long decay
-            0.25,  // damping - minimal damping for bright reverb
-            0.7,   // mix - 70% wet signal
-        )));
-
-        
         AudioProcessor {
             fft_visualizer: SpectrumVisualizer::new(sample_rate, 480, 30),
-            filters_chain,
-            modulation_chain,
+            filters_chain: FiltersChain::new(),
+            modulation_chain: modulation_chain,
         }
     }
 

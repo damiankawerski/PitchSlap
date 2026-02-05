@@ -1,6 +1,7 @@
 pub trait EffectModule: Send {
     fn process(&mut self, in_b: &[f32], out_b: &mut [f32]);
-    fn reset_state(&mut self);
+    fn reset(&mut self);
+    fn name(&self) -> &str; 
 }
 
 pub trait EffectChain {

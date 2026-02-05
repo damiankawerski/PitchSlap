@@ -15,7 +15,7 @@ impl ModulationChain {
 impl EffectChain for ModulationChain {
     fn reset_chain_state(&mut self) {
         for effect in self.effects.iter_mut() {
-            effect.reset_state();
+            effect.reset();
         }
     }
 

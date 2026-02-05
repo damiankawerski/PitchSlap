@@ -6,7 +6,7 @@ use rustfft::num_complex::Complex;
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
-use crate::dsp::utils::*;
+use crate::dsp::modules::utils::windows::apply_hanning_window;
 
 pub struct SpectrumVisualizer {
   fft_planner: Arc<Mutex<RealFftPlanner<f32>>>,

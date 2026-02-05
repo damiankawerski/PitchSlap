@@ -87,6 +87,11 @@ impl PitchShifter {
         }
     }
 
+    
+    pub fn set_shift(&mut self, shift: f32) {
+        self.shift = shift;
+    }
+
     pub fn shift_pitch(
         &mut self,
         in_b: &[f32],
@@ -190,7 +195,7 @@ impl EffectModule for PitchShifter {
         self.shift_pitch(in_b, out_b);
     }
 
-    fn reset_state(&mut self) {
+    fn reset(&mut self) {
         self.in_fifo.fill(0.0);
         self.out_fifo.fill(0.0);
         self.last_phase.fill(0.0);
@@ -200,5 +205,9 @@ impl EffectModule for PitchShifter {
         self.synthesized_magnitude.fill(0.0);
         self.overlap = 0;
         self.shift = 0.0;
+    }
+
+    fn name(&self) -> &str {
+        "pitch_shifter"
     }
 }
