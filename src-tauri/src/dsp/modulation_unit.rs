@@ -28,6 +28,15 @@ impl ModulationUnit {
         self.is_active = active;
     }
 
+    pub fn process(&mut self, input: &[f32]) -> Vec<f32> {
+
+        if self.is_active {
+            self.audio_processor.process(input)
+        } else {
+            input.to_vec()
+        } 
+    }
+
     pub fn process_and_send(&mut self, input: &[f32]) -> anyhow::Result<Vec<f32>> {
         if let Some(ref handle) = self.app_handle {
             if self.is_active {

@@ -46,3 +46,20 @@ pub fn stop_throughput() -> Result<String, String> {
         Ok("Throughput stopped successfully".to_string())
     })
 }
+
+
+#[tauri::command]
+pub fn start_recording() -> Result<String, String> {
+    with_audio_controls(|controls| {
+        controls.start_recording()?;
+        Ok("Recording started successfully".to_string())
+    })
+}
+
+#[tauri::command]
+pub fn stop_recording() -> Result<String, String> {
+    with_audio_controls(|controls| {
+        controls.stop_recording()?;
+        Ok("Recording stopped successfully".to_string())
+    })
+}

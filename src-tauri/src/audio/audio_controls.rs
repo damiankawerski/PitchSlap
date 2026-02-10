@@ -127,6 +127,16 @@ impl AudioControls {
     pub fn clear_app_handle(&mut self) -> anyhow::Result<()> {
       self.audio_handler.clear_app_handle()
     }
+
+    // Recording controls
+
+    pub fn start_recording(&mut self) -> anyhow::Result<()> {
+        self.audio_handler.start_recording()
+    }
+
+    pub fn stop_recording(&mut self) -> anyhow::Result<()> {
+        self.audio_handler.stop_recording()
+    }
 }
 
 

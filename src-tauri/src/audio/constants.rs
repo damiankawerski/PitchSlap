@@ -1,0 +1,1 @@
+pub const DEFAULT_SAVE_PATH: &str = "recording.wav";

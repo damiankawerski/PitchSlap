@@ -27,12 +27,14 @@ impl AudioProcessor {
         //modulation_chain.append_effect(Box::new(AutoTune::new(sample_rate as f32)));
         // modulation_chain.append_effect(Box::new(Reverb::new(sample_rate as u32, 1)));
         // modulation_chain.append_effect(Box::new(Amplifier::new(20.0)));
-        let mut auto_tune = AutoTune::new(sample_rate as f32);
-        auto_tune.set_scale(auto_tune::Scale::EMinor);
-        modulation_chain.append_effect(Box::new(auto_tune));
+        // let mut auto_tune = AutoTune::new(sample_rate as f32);
+        // auto_tune.set_scale(auto_tune::Scale::EMinor);
+        // modulation_chain.append_effect(Box::new(auto_tune));
+
+        modulation_chain.append_effect(Box::new(Distortion::new(50.0)));
 
         AudioProcessor {
-            fft_visualizer: SpectrumVisualizer::new(sample_rate, 480, 30),
+            fft_visualizer: SpectrumVisualizer::new(sample_rate, 480),
             filters_chain: FiltersChain::new(),
             modulation_chain: modulation_chain,
         }

@@ -18,6 +18,8 @@ pub struct AudioHandler {
     throughput_running: bool,
 
     modulation_unit: Option<Arc<Mutex<ModulationUnit>>>,
+
+    recorder_active: bool,
 }
 
 impl AudioHandler {
@@ -38,6 +40,8 @@ impl AudioHandler {
             modulation_unit: Some(Arc::new(Mutex::new(ModulationUnit::new(
                 44100, 
             )))),
+
+            recorder_active: false,
         }
     }
 
@@ -114,6 +118,18 @@ impl AudioHandler {
         Ok(())
     }
 
+    pub fn start_recording(&mut self) -> anyhow::Result<()> {
+        self.recorder_active = true;
+        self.restart()?;
+        Ok(())
+    }
+
+    pub fn stop_recording(&mut self) -> anyhow::Result<()> {
+        self.recorder_active = false;
+        self.restart()?;
+        Ok(())
+    }
+
     // Start and stop audio engine for loopback mode
     pub fn start_audio_engine_loopback(&mut self) -> anyhow::Result<()> {
         if self.loopback_running {
@@ -143,6 +159,7 @@ impl AudioHandler {
         
         // Clone modulation unit if exists
         let modulation_unit_clone = self.modulation_unit.as_ref().map(Arc::clone);
+        let recorder_active = self.recorder_active;
 
         // Spawn audio processing thread
         let handle = thread::spawn(move || {
@@ -152,6 +169,7 @@ impl AudioHandler {
                 options_clone,
                 control,
                 modulation_unit_clone,
+                recorder_active,
             );
         });
 
@@ -213,6 +231,7 @@ impl AudioHandler {
         
         // Clone modulation unit if exists
         let modulation_unit_clone = self.modulation_unit.as_ref().map(Arc::clone);
+        let recorder_active = self.recorder_active;
 
         // Spawn audio processing thread
         let handle = thread::spawn(move || {
@@ -222,6 +241,7 @@ impl AudioHandler {
                 options_clone,
                 control,
                 modulation_unit_clone,
+                recorder_active,
             );
         });
 
@@ -282,6 +302,7 @@ impl AudioHandler {
         options: AudioDeviceOptions,
         control: Arc<Mutex<bool>>,
         modulation_unit: Option<Arc<Mutex<ModulationUnit>>>,
+        recorder_active: bool,
     ) {
         // Create the audio engine
         let audio_engine = match AudioEngine::new(
@@ -289,6 +310,7 @@ impl AudioHandler {
             &output_device,
             &options,
             modulation_unit,
+            recorder_active,
         ) {
             Ok(engine) => engine,
             Err(e) => {
