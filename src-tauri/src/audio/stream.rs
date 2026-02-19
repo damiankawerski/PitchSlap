@@ -3,7 +3,6 @@
 use cpal::Stream;
 use cpal::traits::{DeviceTrait, StreamTrait};
 use std::sync::{Arc, Mutex};
-use std::thread;
 
 use super::buffer::*;
 use super::device::*;
@@ -16,7 +15,7 @@ pub struct AudioStreams {
     input_stream: Stream,
     output_stream: Stream,
 
-    recording_buffer: Arc<Mutex<Vec<f32>>>,
+    recording_buffer: Option<Arc<Mutex<Vec<f32>>>>,
     record_sample_rate: u32,
     record_channels: u16,
 }
@@ -39,8 +38,12 @@ impl AudioStreams {
 
         let record_sample_rate = input_device.get_config().sample_rate.0;
         let record_channels = input_device.get_config().channels;
-        let recording_buffer = Arc::new(Mutex::new(Vec::new()));
-        let recording_buffer_input = Arc::clone(&recording_buffer);
+        let recording_buffer = if active_recording {
+            Some(Arc::new(Mutex::new(Vec::new())))
+        } else {
+            None
+        };
+        let recording_buffer_input = recording_buffer.as_ref().map(Arc::clone);
 
         let input_stream = input_device.get_device().build_input_stream(
             input_device.get_config(),
@@ -59,12 +62,16 @@ impl AudioStreams {
                     };
 
                     if active_recording {
-                        if let Ok(mut recording) = recording_buffer_input.lock() {
-                            if let Err(e) =
-                                buffer.buffer_write_and_record(&processed, &mut recording)
-                            {
-                                eprintln!("Input callback error: {}", e);
+                        if let Some(recording_buffer_input) = &recording_buffer_input {
+                            if let Ok(mut recording) = recording_buffer_input.lock() {
+                                if let Err(e) =
+                                    buffer.buffer_write_and_record(&processed, &mut recording)
+                                {
+                                    eprintln!("Input callback error: {}", e);
+                                }
                             }
+                        } else if let Err(e) = buffer.buffer_write(&processed) {
+                            eprintln!("Input callback error: {}", e);
                         }
                     } else {
                         if let Err(e) = buffer.buffer_write(&processed) {
@@ -117,21 +124,13 @@ impl AudioStreams {
 
     pub fn stop_output_stream(&self) -> anyhow::Result<()> {
         self.output_stream.pause()?;
-        if let Ok(mut recording) = self.recording_buffer.lock() {
-            let recording_data = std::mem::take(&mut *recording);
-            let record_sample_rate = self.record_sample_rate;
-            let record_channels = self.record_channels;
-
-            if !recording_data.is_empty() {
-                thread::spawn(move || {
-                    if let Err(e) = save_audio_buffer_to_file(
-                        &recording_data,
-                        record_sample_rate,
-                        record_channels,
-                    ) {
-                        eprintln!("Error saving recording: {}", e);
-                    }
-                });
+        if let Some(recording) = &self.recording_buffer {
+            if let Ok(recording) = recording.lock() {
+                save_audio_buffer_to_file(
+                    &recording,
+                    self.record_sample_rate,
+                    self.record_channels,
+                )?;
             }
         }
         Ok(())
