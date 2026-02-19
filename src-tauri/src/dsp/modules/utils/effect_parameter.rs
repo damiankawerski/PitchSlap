@@ -7,6 +7,11 @@ pub struct EffectParameter {
     pub default_value: f32,
 }
 
+pub struct ParameterValue {
+    pub name: String,
+    pub value: f32,
+}
+
 impl EffectParameter {
     pub fn new(name: &str, default: f32, min: f32, max: f32) -> Self {
         Self {

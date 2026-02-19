@@ -68,4 +68,26 @@ impl EffectModule for Chorus {
         self.delay_line.clear();
         self.lfo.reset();
     }
+
+    fn get_parameters(&self, name: &str) -> Vec<EffectParameter> {
+        match name {
+            "depth" => vec![self.depth.clone()],
+            "mix" => vec![self.mix.clone()],
+            _ => vec![],
+        }
+    }
+
+    fn set_parameter(&mut self, parameter: crate::dsp::modules::utils::ParameterValue) -> anyhow::Result<()> {
+        match parameter.name.as_str() {
+            "depth" => {
+                self.depth.set_value(parameter.value);
+                Ok(())
+            }
+            "mix" => {
+                self.mix.set_value(parameter.value);
+                Ok(())
+            }
+            _ => Err(anyhow::anyhow!("Unknown parameter: {}", parameter.name)),
+        }
+    }
 }

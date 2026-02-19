@@ -4,6 +4,7 @@ use std::sync::{Arc, Mutex};
 use std::thread::{self, JoinHandle};
 use std::time::Duration;
 use crate::dsp::modulation_unit::ModulationUnit;
+use crate::dsp::modules::utils::ParameterValue;
 
 pub struct AudioHandler {
     options: AudioDeviceOptions,
@@ -112,6 +113,36 @@ impl AudioHandler {
         if let Some(ref unit) = self.modulation_unit {
             let mut unit = unit.lock().unwrap();
             unit.set_active(false);
+        }
+        self.restart()?;
+
+        Ok(())
+    }
+
+    pub fn append_effect_to_modulation(&mut self, effect_name: &str) -> anyhow::Result<()> {
+        if let Some(ref unit) = self.modulation_unit {
+            let mut unit = unit.lock().unwrap();
+            unit.append_effect_from_name(effect_name)?;
+        }
+        self.restart()?;
+
+        Ok(())
+    }
+
+    pub fn set_effect_parameter(&mut self, effect_name: &str, parameter: ParameterValue) -> anyhow::Result<()> {
+        if let Some(ref unit) = self.modulation_unit {
+            let mut unit = unit.lock().unwrap();
+            unit.set_effect_parameter(effect_name, parameter)?;
+        }
+        self.restart()?;
+
+        Ok(())    
+    }
+
+     pub fn remove_effect_from_modulation(&mut self, effect_name: &str) -> anyhow::Result<()> {
+        if let Some(ref unit) = self.modulation_unit {
+            let mut unit = unit.lock().unwrap();
+            unit.remove_effect_from_name(effect_name);
         }
         self.restart()?;
 

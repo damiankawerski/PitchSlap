@@ -1,5 +1,5 @@
 use crate::dsp::modules::filters::DelayLine;
-use crate::dsp::modules::utils::effect_parameter::EffectParameter;
+use crate::dsp::modules::utils::effect_parameter::{EffectParameter, ParameterValue};
 use crate::dsp::modules::utils::lfo::LFO;
 use crate::dsp::traits::EffectModule;
 
@@ -63,5 +63,22 @@ impl EffectModule for Vibrato {
     fn reset(&mut self) {
         self.delay_line.clear();
         self.lfo.reset();
+    }
+
+    fn set_parameter(&mut self, parameter: ParameterValue) -> anyhow::Result<()> {
+        match parameter.name.as_str() {
+            "intensity" => {
+                self.intensity.value = parameter.value.clamp(self.intensity.min_value, self.intensity.max_value);
+                Ok(())
+            }
+            _ => Err(anyhow::anyhow!("Unknown parameter: {}", parameter.name)),
+        }
+    }
+
+    fn get_parameters(&self, name: &str) -> Vec<EffectParameter> {
+        match name {
+            "intensity" => vec![self.intensity.clone()],
+            _ => vec![],
+        }
     }
 }

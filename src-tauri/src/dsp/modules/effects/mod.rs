@@ -17,3 +17,4 @@ pub use chorus::Chorus;
 pub use vocoder::Vocoder;
 pub use auto_tune::AutoTune;
 pub use pitch_shifter::PitchShifter;
+pub use auto_tune::Scale;

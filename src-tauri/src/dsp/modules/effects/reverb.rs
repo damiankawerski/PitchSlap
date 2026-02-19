@@ -4,7 +4,7 @@
 //! for enhanced audio experience.
 
 use crate::dsp::traits::EffectModule;
-use crate::dsp::modules::utils::effect_parameter::EffectParameter;
+use crate::dsp::modules::utils::effect_parameter::{EffectParameter, ParameterValue};
 use crate::dsp::modules::filters::*;
 
 
@@ -178,6 +178,38 @@ impl EffectModule for Reverb {
 
     fn name(&self) -> &str {
         "reverb"
+    }
+
+    fn set_parameter(&mut self, parameter: ParameterValue) -> anyhow::Result<()> {
+        match parameter.name.as_str() {
+            "room_size" => {
+                self.set_room_size(parameter.value);
+                Ok(())
+            }
+            "damping" => {
+                self.set_damping(parameter.value);
+                Ok(())
+            }
+            "wet_level" => {
+                self.set_wet_level(parameter.value);
+                Ok(())
+            }
+            "dry_level" => {
+                self.set_dry_level(parameter.value);
+                Ok(())
+            }
+            _ => Err(anyhow::anyhow!("Unknown parameter: {}", parameter.name)),
+        }
+    }
+
+    fn get_parameters(&self, name: &str) -> Vec<EffectParameter> {
+        match name {
+            "room_size" => vec![self.room_size.clone()],
+            "damping" => vec![self.damping.clone()],
+            "wet_level" => vec![self.wet_level.clone()],
+            "dry_level" => vec![self.dry_level.clone()],
+            _ => vec![],
+        }
     }
 
 }

@@ -1,4 +1,6 @@
 use crate::dsp::traits::{EffectModule, EffectChain};
+use crate::dsp::modules::utils::ParameterValue;
+
 
 pub struct ModulationChain {
     effects: Vec<Box<dyn EffectModule>>,
@@ -88,8 +90,12 @@ impl EffectChain for ModulationChain {
         self.effects.push(effect);
     }
 
-    fn pop_effect(&mut self) -> Option<Box<dyn EffectModule>> {
-        self.effects.pop()
+    fn remove_effect_from_name(&mut self, name: &str) -> Option<Box<dyn EffectModule>> {
+        if let Some(pos) = self.effects.iter().position(|e| e.name() == name) {
+            return Some(self.effects.remove(pos))
+        } else {
+            return None
+        }
     }
 
     fn remove_effect_at(&mut self, index: usize) -> Option<Box<dyn EffectModule>> {
@@ -97,6 +103,14 @@ impl EffectChain for ModulationChain {
             Some(self.effects.remove(index))
         } else {
             None
+        }
+    }
+
+    fn set_effect_parameter(&mut self, effect_name: &str, parameter: ParameterValue) -> anyhow::Result<()> {
+        if let Some(effect) = self.effects.iter_mut().find(|e| e.name() == effect_name) {
+            effect.set_parameter(parameter)
+        } else {
+            Err(anyhow::anyhow!("Effect '{}' not found in chain", effect_name))
         }
     }
 }

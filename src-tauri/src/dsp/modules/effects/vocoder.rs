@@ -1,5 +1,6 @@
 use crate::dsp::modules::filters::BandPassFilter;
 use crate::dsp::modules::effects::Reverb;
+use crate::dsp::modules::utils::{EffectParameter, ParameterValue};
 use crate::dsp::modules::utils::oscilator::Oscillator;
 use crate::dsp::traits::{EffectModule, FilterModule};
 
@@ -8,23 +9,23 @@ use crate::dsp::traits::{EffectModule, FilterModule};
 pub struct Vocoder {
 	name: String,
 	sample_rate: f32,
-	band_count: usize,
-	min_freq: f32,
-	max_freq: f32,
-	q: f32,
-	attack_ms: f32,
-	release_ms: f32,
-	output_gain: f32,
-	dry_mix: f32,
-	env_gain: f32,
-	env_floor: f32,
-	soft_clip: f32,
-	reverb_mix: f32,
+	band_count: EffectParameter,
+	min_freq: EffectParameter,
+	max_freq: EffectParameter,
+	q: EffectParameter,
+	attack_ms: EffectParameter,
+	release_ms: EffectParameter,
+	output_gain: EffectParameter,
+	dry_mix: EffectParameter,
+	env_gain: EffectParameter,
+	env_floor: EffectParameter,
+	soft_clip: EffectParameter,
+	reverb_mix: EffectParameter,
 	reverb: Reverb,
 	reverb_buffer: Vec<f32>,
-	carrier_base_freq: f32,
-	carrier_harmonics: usize,
-	carrier_gain: f32,
+	carrier_base_freq: EffectParameter,
+	carrier_harmonics: EffectParameter,
+	carrier_gain: EffectParameter,
 	mod_filters: Vec<BandPassFilter>,
 	car_filters: Vec<BandPassFilter>,
 	envelopes: Vec<f32>,
@@ -38,23 +39,23 @@ impl Vocoder {
 		let mut effect = Self {
 			name: "vocoder".to_string(),
 			sample_rate: sample_rate as f32,
-			band_count: 32,
-			min_freq: 90.0,
-			max_freq: 9_000.0,
-			q: 9.0,
-			attack_ms: 2.0,
-			release_ms: 50.0,
-			output_gain: 4.0,
-			dry_mix: 0.2,
-			env_gain: 11.0,
-			env_floor: 0.0015,
-			soft_clip: 1.6,
-			reverb_mix: 0.08,
+			band_count: EffectParameter::new("band_count", 32.0, 1.0, 64.0),
+			min_freq: EffectParameter::new("min_freq", 90.0, 20.0, 4_000.0),
+			max_freq: EffectParameter::new("max_freq", 9_000.0, 1_000.0, 20_000.0),
+			q: EffectParameter::new("q", 9.0, 0.5, 30.0),
+			attack_ms: EffectParameter::new("attack_ms", 2.0, 0.1, 200.0),
+			release_ms: EffectParameter::new("release_ms", 50.0, 1.0, 500.0),
+			output_gain: EffectParameter::new("output_gain", 4.0, 0.0, 20.0),
+			dry_mix: EffectParameter::new("dry_mix", 0.2, 0.0, 1.0),
+			env_gain: EffectParameter::new("env_gain", 11.0, 0.0, 30.0),
+			env_floor: EffectParameter::new("env_floor", 0.0015, 0.0, 0.1),
+			soft_clip: EffectParameter::new("soft_clip", 1.6, 0.0, 4.0),
+			reverb_mix: EffectParameter::new("reverb_mix", 0.08, 0.0, 1.0),
 			reverb: Reverb::new(sample_rate as u32, 1),
 			reverb_buffer: Vec::new(),
-			carrier_base_freq: 110.0,
-			carrier_harmonics: 18,
-			carrier_gain: 0.22,
+			carrier_base_freq: EffectParameter::new("carrier_base_freq", 110.0, 20.0, 2_000.0),
+			carrier_harmonics: EffectParameter::new("carrier_harmonics", 18.0, 1.0, 64.0),
+			carrier_gain: EffectParameter::new("carrier_gain", 0.22, 0.0, 1.0),
 			mod_filters: Vec::new(),
 			car_filters: Vec::new(),
 			envelopes: Vec::new(),
@@ -69,20 +70,20 @@ impl Vocoder {
 
 	pub fn daft_punk(sample_rate: usize) -> Self {
 		let mut effect = Self::new(sample_rate);
-		effect.band_count = 32;
-		effect.min_freq = 80.0;
-		effect.max_freq = 9_000.0;
-		effect.q = 10.0;
-		effect.attack_ms = 2.5;
-		effect.release_ms = 70.0;
-		effect.output_gain = 5.5;
-		effect.env_gain = 12.0;
-		effect.env_floor = 0.0025;
-		effect.soft_clip = 1.8;
-		effect.reverb_mix = 0.1;
-		effect.carrier_base_freq = 300.0;
-		effect.carrier_harmonics = 20;
-		effect.carrier_gain = 0.22;
+		effect.band_count.set_value(32.0);
+		effect.min_freq.set_value(80.0);
+		effect.max_freq.set_value(9_000.0);
+		effect.q.set_value(10.0);
+		effect.attack_ms.set_value(2.5);
+		effect.release_ms.set_value(70.0);
+		effect.output_gain.set_value(5.5);
+		effect.env_gain.set_value(12.0);
+		effect.env_floor.set_value(0.0025);
+		effect.soft_clip.set_value(1.8);
+		effect.reverb_mix.set_value(0.1);
+		effect.carrier_base_freq.set_value(300.0);
+		effect.carrier_harmonics.set_value(20.0);
+		effect.carrier_gain.set_value(0.22);
 		effect.rebuild();
 		effect
 	}
@@ -94,8 +95,8 @@ impl Vocoder {
 	}
 
 	fn update_env_coeffs(&mut self) {
-		let attack = (self.attack_ms.max(0.1)) * 0.001;
-		let release = (self.release_ms.max(1.0)) * 0.001;
+		let attack = self.attack_ms.value * 0.001;
+		let release = self.release_ms.value * 0.001;
 		self.attack_coeff = (-1.0 / (attack * self.sample_rate)).exp();
 		self.release_coeff = (-1.0 / (release * self.sample_rate)).exp();
 	}
@@ -109,7 +110,7 @@ impl Vocoder {
 		self.envelopes.clear();
 
 		for center in centers {
-			let bandwidth = (center / self.q).max(bandwidth_floor);
+			let bandwidth = (center / self.q.value).max(bandwidth_floor);
 			self.mod_filters
 				.push(BandPassFilter::new(self.sample_rate, center, bandwidth));
 			self.car_filters
@@ -120,23 +121,23 @@ impl Vocoder {
 
 	fn rebuild_carrier(&mut self) {
 		self.carrier_oscillators.clear();
-		let harmonics = self.carrier_harmonics.max(1);
+		let harmonics = self.carrier_harmonics.value.round() as usize;
 		for i in 1..=harmonics {
-			let freq = self.carrier_base_freq * i as f32;
-			let amp = self.carrier_gain / i as f32;
+			let freq = self.carrier_base_freq.value * i as f32;
+			let amp = self.carrier_gain.value / i as f32;
 			self.carrier_oscillators.push(Oscillator::new(freq, amp));
 		}
 	}
 
 	fn center_frequencies(&self) -> Vec<f32> {
-		let bands = self.band_count.max(1);
+		let bands = self.band_count.value.round() as usize;
 		if bands == 1 {
-			return vec![(self.min_freq + self.max_freq) * 0.5];
+			return vec![(self.min_freq.value + self.max_freq.value) * 0.5];
 		}
 
-		let ratio = (self.max_freq / self.min_freq).powf(1.0 / (bands as f32 - 1.0));
+		let ratio = (self.max_freq.value / self.min_freq.value).powf(1.0 / (bands as f32 - 1.0));
 		let mut centers = Vec::with_capacity(bands);
-		let mut freq = self.min_freq;
+		let mut freq = self.min_freq.value;
 		for _ in 0..bands {
 			centers.push(freq);
 			freq *= ratio;
@@ -183,25 +184,25 @@ impl EffectModule for Vocoder {
 			for band in 0..self.mod_filters.len() {
 				let filtered_mod = self.mod_filters[band].process(mod_sample);
 				let env = self.update_envelope(band, filtered_mod.abs());
-				let env = (env * self.env_gain + self.env_floor).clamp(0.0, 1.0);
+				let env = (env * self.env_gain.value + self.env_floor.value).clamp(0.0, 1.0);
 				let filtered_carrier = self.car_filters[band].process(carrier_sample);
 				acc += filtered_carrier * env * band_scale;
 			}
 
-			let mixed = acc * self.output_gain + mod_sample * self.dry_mix;
-			output[i] = if self.soft_clip > 0.0 {
-				(mixed * self.soft_clip).tanh()
+			let mixed = acc * self.output_gain.value + mod_sample * self.dry_mix.value;
+			output[i] = if self.soft_clip.value > 0.0 {
+				(mixed * self.soft_clip.value).tanh()
 			} else {
 				mixed
 			};
 		}
 
-		if self.reverb_mix > 0.0 {
+		if self.reverb_mix.value > 0.0 {
 			if self.reverb_buffer.len() != len {
 				self.reverb_buffer.resize(len, 0.0);
 			}
 			self.reverb.process(&output[..len], &mut self.reverb_buffer);
-			let wet = self.reverb_mix.clamp(0.0, 1.0);
+			let wet = self.reverb_mix.value.clamp(0.0, 1.0);
 			let dry = 1.0 - wet;
 			for i in 0..len {
 				output[i] = output[i] * dry + self.reverb_buffer[i] * wet;
@@ -227,5 +228,101 @@ impl EffectModule for Vocoder {
 
 	fn name(&self) -> &str {
 		&self.name
+	}
+
+	fn set_parameter(&mut self, parameter: ParameterValue) -> anyhow::Result<()> {
+		match parameter.name.as_str() {
+			"band_count" => {
+				self.band_count.set_value(parameter.value);
+				self.rebuild_filters();
+				Ok(())
+			}
+			"min_freq" => {
+				self.min_freq.set_value(parameter.value);
+				self.rebuild_filters();
+				Ok(())
+			}
+			"max_freq" => {
+				self.max_freq.set_value(parameter.value);
+				self.rebuild_filters();
+				Ok(())
+			}
+			"q" => {
+				self.q.set_value(parameter.value);
+				self.rebuild_filters();
+				Ok(())
+			}
+			"attack_ms" => {
+				self.attack_ms.set_value(parameter.value);
+				self.update_env_coeffs();
+				Ok(())
+			}
+			"release_ms" => {
+				self.release_ms.set_value(parameter.value);
+				self.update_env_coeffs();
+				Ok(())
+			}
+			"output_gain" => {
+				self.output_gain.set_value(parameter.value);
+				Ok(())
+			}
+			"dry_mix" => {
+				self.dry_mix.set_value(parameter.value);
+				Ok(())
+			}
+			"env_gain" => {
+				self.env_gain.set_value(parameter.value);
+				Ok(())
+			}
+			"env_floor" => {
+				self.env_floor.set_value(parameter.value);
+				Ok(())
+			}
+			"soft_clip" => {
+				self.soft_clip.set_value(parameter.value);
+				Ok(())
+			}
+			"reverb_mix" => {
+				self.reverb_mix.set_value(parameter.value);
+				Ok(())
+			}
+			"carrier_base_freq" => {
+				self.carrier_base_freq.set_value(parameter.value);
+				self.rebuild_carrier();
+				Ok(())
+			}
+			"carrier_harmonics" => {
+				self.carrier_harmonics.set_value(parameter.value);
+				self.rebuild_carrier();
+				Ok(())
+			}
+			"carrier_gain" => {
+				self.carrier_gain.set_value(parameter.value);
+				self.rebuild_carrier();
+				Ok(())
+			}
+			_ => Err(anyhow::anyhow!("Unknown parameter: {}", parameter.name)),
+		}
+	}
+
+	fn get_parameters(&self, name: &str) -> Vec<EffectParameter> {
+		match name {
+			"band_count" => vec![self.band_count.clone()],
+			"min_freq" => vec![self.min_freq.clone()],
+			"max_freq" => vec![self.max_freq.clone()],
+			"q" => vec![self.q.clone()],
+			"attack_ms" => vec![self.attack_ms.clone()],
+			"release_ms" => vec![self.release_ms.clone()],
+			"output_gain" => vec![self.output_gain.clone()],
+			"dry_mix" => vec![self.dry_mix.clone()],
+			"env_gain" => vec![self.env_gain.clone()],
+			"env_floor" => vec![self.env_floor.clone()],
+			"soft_clip" => vec![self.soft_clip.clone()],
+			"reverb_mix" => vec![self.reverb_mix.clone()],
+			"carrier_base_freq" => vec![self.carrier_base_freq.clone()],
+			"carrier_harmonics" => vec![self.carrier_harmonics.clone()],
+			"carrier_gain" => vec![self.carrier_gain.clone()],
+			_ => vec![],
+		}
 	}
 }

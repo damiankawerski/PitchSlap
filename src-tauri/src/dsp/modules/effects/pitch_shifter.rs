@@ -8,6 +8,7 @@ use crate::dsp::traits::EffectModule;
 
 use std::f32::consts::PI;
 use std::f32::consts::TAU; // = 2xPI
+use crate::dsp::modules::utils::effect_parameter::{EffectParameter, ParameterValue};
 
 const COMPLEX_ZERO: Complex<f32> = Complex::new(0.0, 0.0);
 
@@ -35,7 +36,7 @@ pub struct PitchShifter {
     sample_rate: usize,
 
     // Configuration parameters
-    shift: f32,
+    shift: EffectParameter,
     over_sampling: usize,
 }
 
@@ -82,14 +83,14 @@ impl PitchShifter {
             overlap: 0,
             sample_rate,
 
-            shift,
+            shift: EffectParameter::new("shift", shift, -12.0, 12.0),
             over_sampling,
         }
     }
 
     
     pub fn set_shift(&mut self, shift: f32) {
-        self.shift = shift;
+        self.shift.set_value(shift);    
     }
 
     pub fn shift_pitch(
@@ -97,7 +98,7 @@ impl PitchShifter {
         in_b: &[f32],
         out_b: &mut [f32],
     ) {
-        let shift = 2.0_f32.powf(self.shift / 12.0);
+        let shift = 2.0_f32.powf(self.shift.value / 12.0);
         let fs_real = self.frame_size as f32;
         let half_frame_size = (self.frame_size / 2) + 1;
 
@@ -204,10 +205,27 @@ impl EffectModule for PitchShifter {
         self.synthesized_frequency.fill(0.0);
         self.synthesized_magnitude.fill(0.0);
         self.overlap = 0;
-        self.shift = 0.0;
+        self.shift = EffectParameter::new("shift", 0.0, -12.0, 12.0);
     }
 
     fn name(&self) -> &str {
         "pitch_shifter"
+    }
+
+    fn get_parameters(&self, name: &str) -> Vec<EffectParameter> {
+        match name {
+            "shift" => vec![self.shift.clone()],
+            _ => vec![],
+        }
+    }
+
+    fn set_parameter(&mut self, parameter: ParameterValue) -> anyhow::Result<()> {
+        match parameter.name.as_str() {
+            "shift" => {
+                self.set_shift(parameter.value);
+                Ok(())
+            }
+            _ => Err(anyhow::anyhow!("Unknown parameter: {}", parameter.name)),
+        }
     }
 }
