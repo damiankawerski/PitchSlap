@@ -3,13 +3,13 @@ import { SidebarProvider } from '@/components/ui/sidebar';
 import { createRootRoute, Outlet } from '@tanstack/react-router';
 import '@/index.css';
 import '@/components/bits/DarkVeil.css';
-import DarkVeil from '@/components/bits/DarkVeil';
+import ColorBends from '@/components/bits/ColorBends';
 
 const RootLayout = () => (
   <>
     <SidebarProvider defaultOpen={true}>
       <div className="fixed inset-0 z-0 pointer-events-none">
-        <DarkVeil />
+        <ColorBends />
       </div>
       <div className="relative z-10 flex h-svh overflow-hidden">
         <AppSidebar />

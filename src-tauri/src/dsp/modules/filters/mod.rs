@@ -1,4 +1,21 @@
 pub mod biquad;
-pub mod moving_average;
-pub mod de_esser;
-pub mod noise_gate;
+pub mod comb;
+pub mod all_pass;
+pub mod delay_lines;
+pub mod low_pass;
+pub mod high_pass;
+pub mod band_pass;
+pub mod peaking;
+pub mod low_shelf;
+pub mod high_shelf;
+
+pub use all_pass::*;
+pub use band_pass::*;
+pub use biquad::*;
+pub use comb::*;
+pub use delay_lines::*;
+pub use high_pass::*;
+pub use high_shelf::*;
+pub use low_pass::*;
+pub use low_shelf::*;
+pub use peaking::*;

@@ -9,6 +9,8 @@ pub fn run() {
             super::switches::stop_loopback,
             super::switches::throughput,
             super::switches::stop_throughput,
+            super::modulation_conf::enable_modulation,
+            super::modulation_conf::disable_modulation,
             super::devices_lists::get_input_devices_list,
             super::devices_lists::get_output_devices_list,
             super::devices_lists::get_virtual_devices_list,
@@ -24,6 +26,9 @@ pub fn run() {
             super::config_getter::is_throughput_running,
             super::visualizer::initialize_audio,
             super::visualizer::deinitialize_audio,
+            super::modulation_conf::append_effect,
+            super::modulation_conf::remove_effect,
+            super::modulation_conf::set_effect_parameter,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

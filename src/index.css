@@ -113,14 +113,23 @@
 @layer base {
   * {
     @apply border-border outline-ring/50;
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  *::-webkit-scrollbar {
+    width: 0;
+    height: 0;
+    display: none;
   }
   html {
     @apply bg-background;
     overscroll-behavior: none;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply text-foreground;
     overscroll-behavior: none;
+    background-color: black;
+    background-attachment: fixed;
   }
   #root {
     min-height: 100%;

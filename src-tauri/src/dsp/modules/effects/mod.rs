@@ -1,0 +1,20 @@
+pub mod vibrato;
+pub mod bitcrusher;
+pub mod amplifier;
+pub mod distortion;
+pub mod reverb;
+pub mod chorus;
+pub mod vocoder;
+pub mod auto_tune;
+pub mod pitch_shifter;
+
+pub use vibrato::Vibrato;
+pub use bitcrusher::Bitcrusher;
+pub use amplifier::Amplifier;
+pub use distortion::Distortion;
+pub use reverb::Reverb;
+pub use chorus::Chorus;
+pub use vocoder::Vocoder;
+pub use auto_tune::AutoTune;
+pub use pitch_shifter::PitchShifter;
+pub use auto_tune::Scale;

@@ -1,104 +1,86 @@
-use super::modules::visualizer::fft_visualizer::*;
-use super::modules::filters::biquad::*;
-use super::modules::filters::moving_average::*;
-use super::modules::filters::de_esser::*;
-use super::modules::filters::noise_gate::*;
+#![allow(dead_code)]
 
+use super::modules::chains::filters_chain::*;
+use super::modules::chains::modulation_chain::*;
+
+use super::modules::visualizer::fft_visualizer::*;
+use super::modules::utils::ParameterValue;
+use super::traits::{EffectChain, FilterChain};
+use crate::dsp::modules::effects::*;
+use crate::dsp::traits::EffectModule;
+use super::effect_factory::create_effect_from_name;
 
 pub struct AudioProcessor {
-    sample_rate: usize,
     fft_visualizer: SpectrumVisualizer,
-    buffer: Vec<f32>,
-
-    // Stateful effect chain (must persist between calls)
-    hp: BiquadFilter,
-    notch: BiquadFilter,
-    noise_gate: NoiseGate,
-    de_esser: DeEsser,
-    lp: BiquadFilter,
-    moving_average: MovingAverageFilter,
+    filters_chain: FiltersChain,
+    modulation_chain: ModulationChain,
+    sample_rate: usize,
 }
-
 
 impl AudioProcessor {
     pub fn new(sample_rate: usize) -> Self {
-        // Default chain parameters
-        let hp_coeffs = highpass_coeffs(sample_rate as f32, 80.0, 0.707);
-        let notch_coeffs = notch_coeffs(sample_rate as f32, 3000.0, 10.0);
-        let lp_coeffs = lowpass_coeffs(sample_rate as f32, 12000.0, 0.707);
+        let mut modulation_chain = ModulationChain::new();
+        //modulation_chain.append_effect(Box::new(Reverb::new(sample_rate as u32, 1)));
+        // modulation_chain.append_effect(Box::new(Chorus::new(
+        //     sample_rate,
+        //     50.0,
+        //     50.0,
+        // )));
 
-        let noise_gate = NoiseGate::new(-35.0, 2.0, 30.0, sample_rate as f32);
-        let de_esser = DeEsser::new(sample_rate as f32, -20.0, 3.0);
-        let moving_average = MovingAverageFilter::new(2);
-        
+        //modulation_chain.append_effect(Box::new(AutoTune::new(sample_rate as f32)));
+        // modulation_chain.append_effect(Box::new(Reverb::new(sample_rate as u32, 1)));
+        // modulation_chain.append_effect(Box::new(Amplifier::new(20.0)));
+        // let mut auto_tune = AutoTune::new(sample_rate as f32);
+        // auto_tune.set_scale(auto_tune::Scale::EMinor);
+        // modulation_chain.append_effect(Box::new(auto_tune));
+
+        modulation_chain.append_effect(Box::new(Distortion::new(50.0)));
+
         AudioProcessor {
+            fft_visualizer: SpectrumVisualizer::new(sample_rate, 480),
+            filters_chain: FiltersChain::new(),
+            modulation_chain: modulation_chain,
             sample_rate,
-            fft_visualizer: SpectrumVisualizer::new(sample_rate, 480, 30),
-            buffer: Vec::new(),
-            hp: BiquadFilter::new(hp_coeffs),
-            notch: BiquadFilter::new(notch_coeffs),
-            noise_gate,
-            de_esser,
-            lp: BiquadFilter::new(lp_coeffs),
-            moving_average,
         }
     }
 
-    pub fn reset_chain_state(&mut self) {
-        self.hp.reset();
-        self.notch.reset();
-        self.noise_gate.reset();
-        self.lp.reset();
-        self.moving_average.reset();
+    pub fn process(&mut self, input: &[f32]) -> Vec<f32> {
+        let mut filtered_output = vec![0.0; input.len()];
+        self.filters_chain
+            .apply_processing(input, &mut filtered_output);
+
+        let mut modulated_output = vec![0.0; input.len()];
+        self.modulation_chain
+            .apply_processing(&filtered_output, &mut modulated_output);
+
+        modulated_output
     }
 
-    pub fn set_noise_gate_threshold(&mut self, threshold: f32) {
-        self.noise_gate.set_threshold(threshold);
+    pub fn process_and_send(&mut self, input: &[f32], app_handle: &tauri::AppHandle) -> Vec<f32> {
+        let output = self.process(input);
+
+        self.fft_visualizer.emit_spectrum(app_handle, &output).ok();
+
+        output
     }
 
-    pub fn apply_default_processing(&mut self, input: &[f32]) {
-        // Fast path: resize only when needed (typically once at start)
-        if self.buffer.len() != input.len() {
-            self.buffer.resize(input.len(), 0.0);
-        }
-        
-        // Single memcpy - unavoidable for safety
-        self.buffer.copy_from_slice(input);
-
-        // Prawdziwy chain efektów: jeden przebieg po buforze + stan utrzymany między wywołaniami.
-        for sample in self.buffer.iter_mut() {
-            let mut x = *sample;
-
-            // 1. High-pass filter - usuwa niskie częstotliwości (stuknięcia, rumble)
-            x = self.hp.process(x);
-
-            // 2. Notch filter - wycina typowe częstotliwości sprzężenia (feedback)
-            x = self.notch.process(x);
-
-            // 3. Noise gate - usuwa cichsze szumy i stuknięcia
-            x = self.noise_gate.process(x);
-
-            // 4. De-esser - redukuje syczenie
-            x = self.de_esser.process(x);
-
-            // 5. Low-pass filter - wygładza górne częstotliwości
-            x = self.lp.process(x);
-
-            // 6. Moving average - końcowe wygładzenie
-            x = self.moving_average.process(x);
-
-            *sample = x;
-        }
+    pub fn send_spectrum(&mut self, input: &[f32], app_handle: &tauri::AppHandle) -> anyhow::Result<()> {
+        self.fft_visualizer.emit_spectrum(app_handle, input)?;
+        Ok(())
     }
 
-    pub fn process_and_send(&mut self, input: &[f32], app_handle: &tauri::AppHandle) -> anyhow::Result<()> {
-        self.apply_default_processing(input);
-        self.fft_visualizer.emit_spectrum(app_handle, &self.buffer)
+    pub fn append_effect_from_name(&mut self, name: &str) -> anyhow::Result<()> {
+        let effect = create_effect_from_name(name, self.sample_rate, 1)
+            .map_err(anyhow::Error::msg)?;
+        self.modulation_chain.append_effect(effect);
+        Ok(())
     }
 
-    pub fn test_processing(&mut self, input: &[f32]) -> Vec<f32> {
-        self.apply_default_processing(input);
-        self.buffer.clone()
+    pub fn remove_effect_from_name(&mut self, name: &str) -> Option<Box<dyn EffectModule>> {
+        self.modulation_chain.remove_effect_from_name(name)
     }
 
+    pub fn set_effect_parameter(&mut self, effect_name: &str, parameter: ParameterValue) -> anyhow::Result<()> {
+        self.modulation_chain.set_effect_parameter(effect_name, parameter)
+    }
 }

@@ -6,6 +6,7 @@ use std::sync::{Arc, Mutex};
 
 use super::buffer::*;
 use super::device::*;
+use super::utils::save_audio_buffer_to_file;
 
 use crate::dsp::modulation_unit::ModulationUnit;
 
@@ -13,6 +14,10 @@ pub struct AudioStreams {
     audio_buffer: Arc<Mutex<AudioBuffer>>,
     input_stream: Stream,
     output_stream: Stream,
+
+    recording_buffer: Option<Arc<Mutex<Vec<f32>>>>,
+    record_sample_rate: u32,
+    record_channels: u16,
 }
 
 impl AudioStreams {
@@ -21,6 +26,7 @@ impl AudioStreams {
         output_device: &AudioDevice,
         buffer_size: usize,
         modulation_unit: Option<Arc<Mutex<ModulationUnit>>>,
+        active_recording: bool,
     ) -> anyhow::Result<Self> {
         let audio_buffer = Arc::new(Mutex::new(AudioBuffer::new(buffer_size)));
 
@@ -30,30 +36,47 @@ impl AudioStreams {
         let input_channels = input_device.get_config().channels as usize;
         let output_channels = output_device.get_config().channels as usize;
 
+        let record_sample_rate = input_device.get_config().sample_rate.0;
+        let record_channels = input_device.get_config().channels;
+        let recording_buffer = if active_recording {
+            Some(Arc::new(Mutex::new(Vec::new())))
+        } else {
+            None
+        };
+        let recording_buffer_input = recording_buffer.as_ref().map(Arc::clone);
+
         let input_stream = input_device.get_device().build_input_stream(
             input_device.get_config(),
             move |data: &[f32], _: &cpal::InputCallbackInfo| {
                 if let Ok(mut buffer) = buffer_input.lock() {
-                        let processed = if let Some(ref modulation_unit) = modulation_unit {
+                    let processed = if let Some(ref modulation_unit) = modulation_unit {
                         match modulation_unit.lock() {
-                            Ok(mut mod_unit) => {
-                                // Here apply modulation effects
-                                // Now implementing fft visualizer so off
-                                // mod_unit.process(data)
-                                let _ = mod_unit.process_and_send(data);
-                                mod_unit.test_processing(data)
-                            },
+                            Ok(mut mod_unit) => mod_unit.process(data),
                             Err(poisoned) => {
-                                eprintln!("⚠️ modulation_unit mutex poisoned — recovering.");
-                                Vec::new()
+                                eprintln!("Modulation unit lock poisoned: {}", poisoned);
+                                data.to_vec()
                             }
                         }
                     } else {
                         data.to_vec()
                     };
 
-                    if let Err(e) = buffer.buffer_write(&processed) {
-                        eprintln!("Input callback error: {}", e);
+                    if active_recording {
+                        if let Some(recording_buffer_input) = &recording_buffer_input {
+                            if let Ok(mut recording) = recording_buffer_input.lock() {
+                                if let Err(e) =
+                                    buffer.buffer_write_and_record(&processed, &mut recording)
+                                {
+                                    eprintln!("Input callback error: {}", e);
+                                }
+                            }
+                        } else if let Err(e) = buffer.buffer_write(&processed) {
+                            eprintln!("Input callback error: {}", e);
+                        }
+                    } else {
+                        if let Err(e) = buffer.buffer_write(&processed) {
+                            eprintln!("Input callback error: {}", e);
+                        }
                     }
                 }
             },
@@ -78,6 +101,9 @@ impl AudioStreams {
             audio_buffer,
             input_stream,
             output_stream,
+            recording_buffer,
+            record_sample_rate,
+            record_channels,
         })
     }
 
@@ -98,6 +124,15 @@ impl AudioStreams {
 
     pub fn stop_output_stream(&self) -> anyhow::Result<()> {
         self.output_stream.pause()?;
+        if let Some(recording) = &self.recording_buffer {
+            if let Ok(recording) = recording.lock() {
+                save_audio_buffer_to_file(
+                    &recording,
+                    self.record_sample_rate,
+                    self.record_channels,
+                )?;
+            }
+        }
         Ok(())
     }
 

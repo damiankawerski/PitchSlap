@@ -11,7 +11,6 @@ pub fn apply_hanning_window(buffer: &mut [f32]) {
     }
 }
 
-// Aplikuje okno Hanninga i zwraca nowy bufor
 pub fn apply_hanning_window_copy(buffer: &[f32]) -> Vec<f32> {
     let window: Vec<f32> = hanning(buffer.len());
     buffer.iter()

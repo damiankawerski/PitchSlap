@@ -5,6 +5,7 @@ use std::sync::Mutex;
 
 use super::audio_handler::AudioHandler;
 use super::device::AudioDeviceOptions;
+use crate::dsp::modules::utils::ParameterValue;
 
 pub struct AudioControls {
     audio_handler: AudioHandler,
@@ -17,7 +18,9 @@ impl AudioControls {
     fn new() -> Self {
         let mut audio_handler = AudioHandler::new(AudioDeviceOptions::default());
         let options = AudioDeviceOptions::default();
-        audio_handler.select_audio_devices(&options).expect("Failed to select audio devices");
+        audio_handler
+            .select_audio_devices(&options)
+            .expect("Failed to select audio devices");
 
         AudioControls {
             audio_handler,
@@ -31,17 +34,23 @@ impl AudioControls {
 
     // Functions to get device lists
     pub fn get_input_devices_list(&self) -> Vec<String> {
-        self.audio_handler.get_audio_devices().list_input_devices()
+        self.audio_handler
+            .get_audio_devices()
+            .list_input_devices()
             .unwrap_or_else(|_| vec![])
     }
 
     pub fn get_output_devices_list(&self) -> Vec<String> {
-        self.audio_handler.get_audio_devices().list_output_devices()
+        self.audio_handler
+            .get_audio_devices()
+            .list_output_devices()
             .unwrap_or_else(|_| vec![])
     }
 
     pub fn get_virtual_devices_list(&self) -> Vec<String> {
-        self.audio_handler.get_audio_devices().list_virtual_devices()
+        self.audio_handler
+            .get_audio_devices()
+            .list_virtual_devices()
             .unwrap_or_else(|_| vec![])
     }
 
@@ -118,15 +127,36 @@ impl AudioControls {
         self.audio_handler.disable_modulation()
     }
 
-    // App handle 
+    pub fn append_effect(&mut self, effect_name: &str) -> anyhow::Result<()> {
+        self.audio_handler.append_effect_to_modulation(effect_name)
+    }
+
+    pub fn remove_effect(&mut self, effect_name: &str) -> anyhow::Result<()> {
+        self.audio_handler
+            .remove_effect_from_modulation(effect_name)
+    }
+
+    pub fn set_effect_parameter(&mut self, effect_name: &str, parameter: ParameterValue) -> anyhow::Result<()> {
+        self.audio_handler.set_effect_parameter(effect_name, parameter)
+    }
+
+    // App handle
 
     pub fn set_app_handle(&mut self, handle: tauri::AppHandle) -> anyhow::Result<()> {
-      self.audio_handler.set_app_handle(handle)
+        self.audio_handler.set_app_handle(handle)
     }
 
     pub fn clear_app_handle(&mut self) -> anyhow::Result<()> {
-      self.audio_handler.clear_app_handle()
+        self.audio_handler.clear_app_handle()
+    }
+
+    // Recording controls
+
+    pub fn start_recording(&mut self) -> anyhow::Result<()> {
+        self.audio_handler.start_recording()
+    }
+
+    pub fn stop_recording(&mut self) -> anyhow::Result<()> {
+        self.audio_handler.stop_recording()
     }
 }
-
-

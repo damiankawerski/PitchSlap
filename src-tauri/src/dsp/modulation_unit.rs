@@ -1,4 +1,6 @@
 use super::processor::AudioProcessor;
+use super::traits::EffectModule;
+use crate::dsp::modules::utils::ParameterValue;
 
 // current effect to option
 pub struct ModulationUnit {
@@ -11,7 +13,7 @@ impl ModulationUnit {
     pub fn new(sample_rate: usize) -> Self {
         ModulationUnit {
             audio_processor: AudioProcessor::new(sample_rate),
-            is_active: true,
+            is_active: false,
             app_handle: None,
         }
     }
@@ -28,16 +30,37 @@ impl ModulationUnit {
         self.is_active = active;
     }
 
-    pub fn process_and_send(&mut self, input: &[f32]) -> anyhow::Result<()> {
-        if self.is_active {
-            if let Some(ref handle) = self.app_handle {
-                self.audio_processor.process_and_send(input, handle)?;
-            }
-        }
-        Ok(())
+    pub fn is_active(&self) -> bool {
+        self.is_active
     }
 
-    pub fn test_processing(&mut self, input: &[f32]) -> Vec<f32> {
-        self.audio_processor.test_processing(input)
+    pub fn append_effect_from_name(&mut self, name: &str) -> anyhow::Result<()> {
+        self.audio_processor.append_effect_from_name(name)
+    }
+
+     pub fn remove_effect_from_name(&mut self, name: &str) -> Option<Box<dyn EffectModule>> {
+        self.audio_processor.remove_effect_from_name(name)
+    }
+
+    pub fn set_effect_parameter(&mut self, effect_name: &str, parameter: ParameterValue) -> anyhow::Result<()> {
+        self.audio_processor.set_effect_parameter(effect_name, parameter)
+    }
+
+    pub fn process(&mut self, input: &[f32]) -> Vec<f32> {
+        if self.is_active {
+            if let Some(app_handle) = &self.app_handle {
+                let _ = self.audio_processor.process_and_send(input, app_handle);
+            }
+            self.audio_processor.process(input)
+        } else {
+            if let Some(app_handle) = &self.app_handle {
+                let _ = self.audio_processor.send_spectrum(input, app_handle);
+            }
+            input.to_vec()
+        }
+    }
+
+    pub fn is_app_handle_set(&self) -> bool {
+        self.app_handle.is_some()
     }
 }

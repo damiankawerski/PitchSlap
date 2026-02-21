@@ -4,6 +4,7 @@ use std::sync::{Arc, Mutex};
 use std::thread::{self, JoinHandle};
 use std::time::Duration;
 use crate::dsp::modulation_unit::ModulationUnit;
+use crate::dsp::modules::utils::ParameterValue;
 
 pub struct AudioHandler {
     options: AudioDeviceOptions,
@@ -18,13 +19,15 @@ pub struct AudioHandler {
     throughput_running: bool,
 
     modulation_unit: Option<Arc<Mutex<ModulationUnit>>>,
+
+    recorder_active: bool,
 }
 
 impl AudioHandler {
     // default host for now
     pub fn new(options: AudioDeviceOptions) -> Self {
         AudioHandler {
-            audio_devices: AudioDeviceManager::new(cpal::default_host()),
+            audio_devices: AudioDeviceManager::default(),
             options: options,
 
             loopback_handle: None,
@@ -38,6 +41,8 @@ impl AudioHandler {
             modulation_unit: Some(Arc::new(Mutex::new(ModulationUnit::new(
                 44100, 
             )))),
+
+            recorder_active: false,
         }
     }
 
@@ -114,6 +119,48 @@ impl AudioHandler {
         Ok(())
     }
 
+    pub fn append_effect_to_modulation(&mut self, effect_name: &str) -> anyhow::Result<()> {
+        if let Some(ref unit) = self.modulation_unit {
+            let mut unit = unit.lock().unwrap();
+            unit.append_effect_from_name(effect_name)?;
+        }
+        self.restart()?;
+
+        Ok(())
+    }
+
+    pub fn set_effect_parameter(&mut self, effect_name: &str, parameter: ParameterValue) -> anyhow::Result<()> {
+        if let Some(ref unit) = self.modulation_unit {
+            let mut unit = unit.lock().unwrap();
+            unit.set_effect_parameter(effect_name, parameter)?;
+        }
+        self.restart()?;
+
+        Ok(())    
+    }
+
+     pub fn remove_effect_from_modulation(&mut self, effect_name: &str) -> anyhow::Result<()> {
+        if let Some(ref unit) = self.modulation_unit {
+            let mut unit = unit.lock().unwrap();
+            unit.remove_effect_from_name(effect_name);
+        }
+        self.restart()?;
+
+        Ok(())
+    }
+
+    pub fn start_recording(&mut self) -> anyhow::Result<()> {
+        self.recorder_active = true;
+        self.restart()?;
+        Ok(())
+    }
+
+    pub fn stop_recording(&mut self) -> anyhow::Result<()> {
+        self.recorder_active = false;
+        self.restart()?;
+        Ok(())
+    }
+
     // Start and stop audio engine for loopback mode
     pub fn start_audio_engine_loopback(&mut self) -> anyhow::Result<()> {
         if self.loopback_running {
@@ -143,6 +190,7 @@ impl AudioHandler {
         
         // Clone modulation unit if exists
         let modulation_unit_clone = self.modulation_unit.as_ref().map(Arc::clone);
+        let recorder_active = self.recorder_active;
 
         // Spawn audio processing thread
         let handle = thread::spawn(move || {
@@ -152,6 +200,7 @@ impl AudioHandler {
                 options_clone,
                 control,
                 modulation_unit_clone,
+                recorder_active,
             );
         });
 
@@ -213,6 +262,7 @@ impl AudioHandler {
         
         // Clone modulation unit if exists
         let modulation_unit_clone = self.modulation_unit.as_ref().map(Arc::clone);
+        let recorder_active = self.recorder_active;
 
         // Spawn audio processing thread
         let handle = thread::spawn(move || {
@@ -222,6 +272,7 @@ impl AudioHandler {
                 options_clone,
                 control,
                 modulation_unit_clone,
+                recorder_active,
             );
         });
 
@@ -282,6 +333,7 @@ impl AudioHandler {
         options: AudioDeviceOptions,
         control: Arc<Mutex<bool>>,
         modulation_unit: Option<Arc<Mutex<ModulationUnit>>>,
+        recorder_active: bool,
     ) {
         // Create the audio engine
         let audio_engine = match AudioEngine::new(
@@ -289,6 +341,7 @@ impl AudioHandler {
             &output_device,
             &options,
             modulation_unit,
+            recorder_active,
         ) {
             Ok(engine) => engine,
             Err(e) => {

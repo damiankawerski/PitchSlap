@@ -147,6 +147,7 @@ impl AudioDeviceManager {
         }
     }
 
+
     pub fn default() -> Self {
         let mut manager = AudioDeviceManager::new(cpal::default_host());
         manager

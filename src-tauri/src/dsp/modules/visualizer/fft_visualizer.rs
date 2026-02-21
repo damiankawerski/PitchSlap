@@ -4,25 +4,23 @@ use super::audio_spectrum::*;
 use realfft::RealFftPlanner;
 use rustfft::num_complex::Complex;
 use std::sync::{Arc, Mutex};
-use std::time::{Duration, Instant};
+use std::time::{Instant};
 
-use crate::dsp::utils::*;
+use crate::dsp::modules::utils::windows::apply_hanning_window;
 
 pub struct SpectrumVisualizer {
   fft_planner: Arc<Mutex<RealFftPlanner<f32>>>,
   fft_size: usize,
   sample_rate: usize,
-  throttle_interval: Duration,
   last_emit: Arc<Mutex<Instant>>,
 }
 
 impl SpectrumVisualizer {
-    pub fn new(sample_rate: usize, fft_size: usize, fps: u32) -> Self {
+    pub fn new(sample_rate: usize, fft_size: usize) -> Self {
         Self {
             fft_planner: Arc::new(Mutex::new(RealFftPlanner::new())),
             fft_size,
             sample_rate,
-            throttle_interval: Duration::from_millis(1000 / fps as u64),
             last_emit: Arc::new(Mutex::new(Instant::now())),
         }
     }
@@ -126,9 +124,6 @@ impl SpectrumVisualizer {
 
         // Oblicz FFT (compute_fft teraz oblicza też deltę)
         let spectrum = self.compute_fft(&processed[..self.fft_size])?;
-        println!("Computed spectrum frame at timestamp: {:?}", spectrum.frequencies);
-
-        // Wyślij do frontendu (spectrum zawiera magnitudes + delta)
         app_handle.emit("audio-spectrum", &spectrum)?;
 
         // Zaktualizuj czas ostatniej emisji
