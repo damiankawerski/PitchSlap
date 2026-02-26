@@ -56,3 +56,27 @@ pub fn set_effect_parameter(effect_name: &str, parameter_name: &str, value: f32)
         Ok(format!("Parameter '{}' of effect '{}' set to {}", parameter_name, effect_name, value))
     })
 }
+
+// #[tauri::command]
+// pub fn set_auto_tune_scale(scale: crate::dsp::modules::effects::auto_tune::Scale) -> Result<String, String> {
+//     with_audio_controls(|controls| {
+//         controls.set_auto_tune_scale(scale)?;
+//         Ok("AutoTune scale set successfully".to_string())
+//     })
+// }
+
+// #[tauri::command]
+// pub fn get_parameters(effect_name: &str) -> Result<Vec<crate::dsp::modules::utils::EffectParameter>, String> {
+//     with_audio_controls(|controls| {
+//         let parameters = controls.get_parameters(effect_name)?;
+//         Ok(parameters)
+//     })
+// }
+
+#[tauri::command]
+pub fn get_active_effects() -> Result<Vec<String>, String> {
+    with_audio_controls(|controls| {
+        let active_effects = controls.get_active_effects();
+        Ok(active_effects)
+    })
+}

@@ -140,6 +140,18 @@ impl AudioControls {
         self.audio_handler.set_effect_parameter(effect_name, parameter)
     }
 
+    pub fn get_parameters(&self, effect_name: &str) -> anyhow::Result<Vec<crate::dsp::modules::utils::EffectParameter>> {
+        self.audio_handler.get_effect_parameters(effect_name)
+    }
+
+    pub fn set_auto_tune_scale(&mut self, scale: crate::dsp::modules::effects::auto_tune::Scale) -> anyhow::Result<()> {
+        self.audio_handler.set_auto_tune_scale(scale)
+    }
+
+    pub fn get_active_effects(&self) -> Vec<String> {
+        self.audio_handler.get_active_effects()
+    }
+
     // App handle
 
     pub fn set_app_handle(&mut self, handle: tauri::AppHandle) -> anyhow::Result<()> {

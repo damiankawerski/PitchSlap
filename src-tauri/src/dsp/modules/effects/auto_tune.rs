@@ -208,7 +208,7 @@ impl AutoTune {
 
 impl EffectModule for AutoTune {
     fn name(&self) -> &str {
-        "AutoTune"
+        "autotune"
     }
 
     fn process(&mut self, in_b: &[f32], out_b: &mut [f32]) {
@@ -253,5 +253,10 @@ impl EffectModule for AutoTune {
             }
             _ => Err(anyhow::anyhow!("Unknown parameter: {}", parameter.name)),
         }
+    }
+
+    fn set_scale(&mut self, scale: Scale) -> anyhow::Result<()> {
+        self.set_scale(scale);
+        Ok(())
     }
 }

@@ -209,7 +209,7 @@ impl EffectModule for PitchShifter {
     }
 
     fn name(&self) -> &str {
-        "pitch_shifter"
+        "pitchshifter"
     }
 
     fn get_parameters(&self, name: &str) -> Vec<EffectParameter> {

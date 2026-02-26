@@ -7,7 +7,7 @@ import {
   Sidebar,
 } from '@/components/ui/sidebar';
 
-import { Home, Settings, Sparkles } from 'lucide-react';
+import { Home, Mic, Settings, Sparkles } from 'lucide-react';
 import { NAVIGATION } from '@/lib/consts/navigation';
 import { NavigationMain } from './nav-main';
 import GradientText from '../bits/GradientText';
@@ -16,15 +16,29 @@ import { QuickActions } from './quick-actions';
 export function AppSidebar() {
   const nav_items = [
     { title: 'Home', href: NAVIGATION.HOME, icon: Home },
-    { title: 'Modulation', href: NAVIGATION.MODULATION, icon: Sparkles },
+    {
+      title: 'Modulation',
+      icon: Sparkles,
+      children: [
+        { title: 'Chain', href: NAVIGATION.MODULATION },
+        { title: 'Auto-Tune', href: NAVIGATION.AUTO_TUNE },
+        { title: 'Amplifier', href: NAVIGATION.AMPLIFIER },
+        { title: 'Bit Crusher', href: NAVIGATION.BIT_CRUSHER },
+        { title: 'Chorus', href: NAVIGATION.CHORUS },
+        { title: 'Distortion', href: NAVIGATION.DISTORTION },
+        { title: 'Pitch Shifter', href: NAVIGATION.PICH_SHIFTER },
+        { title: 'Reverb', href: NAVIGATION.REVERB },
+        { title: 'Vibrato', href: NAVIGATION.VIBRATO },
+        { title: 'Vocoder', href: NAVIGATION.VOCODER },
+      ],
+    },
     { title: 'Settings', href: NAVIGATION.SETTINGS, icon: Settings },
+    { title: 'Recorder', href: NAVIGATION.RECORDER, icon: Mic },
   ];
 
   return (
     <>
-      <Sidebar
-        className='border-r-accent-foreground'
-      >
+      <Sidebar className="border-r-accent-foreground">
         <SidebarHeader className="border-b border-sidebar-border mb-4">
           <SidebarMenu>
             <SidebarMenuItem>

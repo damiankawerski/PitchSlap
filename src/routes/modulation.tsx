@@ -1,10 +1,18 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, Outlet, useRouterState } from '@tanstack/react-router'
+import ModulationPage from '@/components/layout/pages/modulation/page';
 
-import { TestRecorder } from '@/components/test_recorder'
 export const Route = createFileRoute('/modulation')({
   component: RouteComponent,
 })
 
 function RouteComponent() {
-	return <TestRecorder />;
+	const currentPath = useRouterState({
+		select: (state) => state.location.pathname,
+	});
+
+	if (currentPath === '/modulation') {
+		return <ModulationPage />;
+	}
+
+	return <Outlet />;
 }

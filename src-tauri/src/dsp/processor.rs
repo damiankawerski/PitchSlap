@@ -20,21 +20,6 @@ pub struct AudioProcessor {
 impl AudioProcessor {
     pub fn new(sample_rate: usize) -> Self {
         let mut modulation_chain = ModulationChain::new();
-        //modulation_chain.append_effect(Box::new(Reverb::new(sample_rate as u32, 1)));
-        // modulation_chain.append_effect(Box::new(Chorus::new(
-        //     sample_rate,
-        //     50.0,
-        //     50.0,
-        // )));
-
-        //modulation_chain.append_effect(Box::new(AutoTune::new(sample_rate as f32)));
-        // modulation_chain.append_effect(Box::new(Reverb::new(sample_rate as u32, 1)));
-        // modulation_chain.append_effect(Box::new(Amplifier::new(20.0)));
-        // let mut auto_tune = AutoTune::new(sample_rate as f32);
-        // auto_tune.set_scale(auto_tune::Scale::EMinor);
-        // modulation_chain.append_effect(Box::new(auto_tune));
-
-        modulation_chain.append_effect(Box::new(Distortion::new(50.0)));
 
         AudioProcessor {
             fft_visualizer: SpectrumVisualizer::new(sample_rate, 480),
@@ -82,5 +67,17 @@ impl AudioProcessor {
 
     pub fn set_effect_parameter(&mut self, effect_name: &str, parameter: ParameterValue) -> anyhow::Result<()> {
         self.modulation_chain.set_effect_parameter(effect_name, parameter)
+    }
+
+    pub fn set_auto_tune_scale(&mut self, scale: crate::dsp::modules::effects::auto_tune::Scale) -> anyhow::Result<()> {
+        self.modulation_chain.set_auto_tune_scale(scale)
+    }
+
+    pub fn get_effect_parameters(&self, effect_name: &str) -> anyhow::Result<Vec<crate::dsp::modules::utils::EffectParameter>> {
+        self.modulation_chain.get_effect_parameters(effect_name)
+    }
+
+    pub fn get_active_effects(&self) -> Vec<String> {
+        self.modulation_chain.get_active_effects()  
     }
 }

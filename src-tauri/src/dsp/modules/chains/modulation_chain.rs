@@ -1,6 +1,5 @@
-use crate::dsp::traits::{EffectModule, EffectChain};
 use crate::dsp::modules::utils::ParameterValue;
-
+use crate::dsp::traits::{EffectChain, EffectModule};
 
 pub struct ModulationChain {
     effects: Vec<Box<dyn EffectModule>>,
@@ -88,13 +87,17 @@ impl EffectChain for ModulationChain {
 
     fn append_effect(&mut self, effect: Box<dyn EffectModule>) {
         self.effects.push(effect);
+        println!(
+            "Current effects in chain: {:?}",
+            self.effects.iter().map(|e| e.name()).collect::<Vec<_>>()
+        );
     }
 
     fn remove_effect_from_name(&mut self, name: &str) -> Option<Box<dyn EffectModule>> {
         if let Some(pos) = self.effects.iter().position(|e| e.name() == name) {
-            return Some(self.effects.remove(pos))
+            return Some(self.effects.remove(pos));
         } else {
-            return None
+            return None;
         }
     }
 
@@ -106,11 +109,47 @@ impl EffectChain for ModulationChain {
         }
     }
 
-    fn set_effect_parameter(&mut self, effect_name: &str, parameter: ParameterValue) -> anyhow::Result<()> {
+    fn set_effect_parameter(
+        &mut self,
+        effect_name: &str,
+        parameter: ParameterValue,
+    ) -> anyhow::Result<()> {
         if let Some(effect) = self.effects.iter_mut().find(|e| e.name() == effect_name) {
             effect.set_parameter(parameter)
         } else {
-            Err(anyhow::anyhow!("Effect '{}' not found in chain", effect_name))
+            Err(anyhow::anyhow!(
+                "Effect '{}' not found in chain",
+                effect_name
+            ))
+        }
+    }
+
+    fn set_auto_tune_scale(
+        &mut self,
+        scale: crate::dsp::modules::effects::Scale,
+    ) -> anyhow::Result<()> {
+        if let Some(effect) = self.effects.iter_mut().find(|e| e.name() == "AutoTune") {
+            effect.set_scale(scale)
+        } else {
+            Err(anyhow::anyhow!("AutoTune effect not found in chain"))
+        }
+    }
+
+    fn get_active_effects(&self) -> Vec<String> {
+        self.effects.iter().map(|e| e.name().to_string()).collect()
+    }
+
+    fn get_effect_parameters(
+        &self,
+        effect_name: &str,
+    ) -> anyhow::Result<Vec<crate::dsp::modules::utils::EffectParameter>> {
+        if let Some(effect) = self.effects.iter().find(|e| e.name() == effect_name) {
+            Ok(effect.get_parameters(effect_name))
+        } else {
+            Err(anyhow::anyhow!(
+                "Effect '{}' not found in chain",
+                effect_name
+            ))
         }
     }
 }
