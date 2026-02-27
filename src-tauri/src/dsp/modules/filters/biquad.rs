@@ -1,4 +1,5 @@
-use std::f32::consts::PI;
+use std::{f32::consts::PI};
+use crate::dsp::traits::FilterModule;
 
 #[derive(Clone, Copy, Debug)]
 pub struct BiquadCoeffs {
@@ -142,5 +143,15 @@ pub fn notch_coeffs(sample_rate: f32, center_freq: f32, q: f32) -> BiquadCoeffs 
         b2: b2 / a0,
         a1: a1 / a0,
         a2: a2 / a0,
+    }
+}
+
+impl FilterModule for BiquadFilter {
+    fn process(&mut self, input: f32) -> f32 {
+        self.process(input)
+    }
+
+    fn reset(&mut self) {
+        self.reset();
     }
 }

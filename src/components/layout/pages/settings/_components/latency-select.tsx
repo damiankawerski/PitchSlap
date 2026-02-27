@@ -35,18 +35,15 @@ export function LatencySelect() {
 		<div className="flex flex-col gap-3">
 			<div className="flex items-center gap-3">
 				<CustomInputNumber
-					label="Latency (ms)"
 					placeholder="Enter latency in ms"
 					value={latency ?? ""}
 					min={1}
 					step={1}
+					label={"Latency (ms)"}
 					onChange={(value) => {
 						setLatencyState(value);
 					}}
 				/>
-				<p className="text-sm text-muted-foreground">
-					Higher values = more stable, but more delay.
-				</p>
 			</div>
 		</div>
 	);

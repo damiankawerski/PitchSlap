@@ -6,6 +6,7 @@ import {
 } from "@/lib/invokes/config-getters";
 import { setOutputDevice } from "@/lib/invokes/config-setters";
 import { CommonSettingsSelector } from "@/components/controls/selectors/common-settings-select";
+import { Speaker } from "lucide-react";
 
 export function OutputDeviceSelect() {
 	const [devices, setDevices] = useState<string[]>([]);
@@ -35,6 +36,7 @@ export function OutputDeviceSelect() {
 			value={selectedDevice || undefined}
 			onChange={handleChange}
 			placeholder="Select Output Device"
+			icon={Speaker}
 		/>
 	);
 }

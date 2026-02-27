@@ -31,7 +31,7 @@ export function CustomInputNumber({
   return (
     <div className={`flex flex-col gap-3 w-full ${className}`}>
       {label && (
-        <label className="text-sm font-semibold text-foreground/90 tracking-wide transition-colors duration-200">
+        <label className="text-sm font-semibold text-secondary tracking-wide transition-colors duration-200">
           {label}
         </label>
       )}
@@ -55,7 +55,7 @@ export function CustomInputNumber({
             if (!onChange) return;
             onChange(raw === "" ? null : Number(raw));
           }}
-          className="relative h-11 w-full backdrop-blur-md bg-card/60 border-2 border-transparent bg-gradient-to-r from-purple-500/30 via-blue-500/30 to-cyan-500/30 bg-clip-padding hover:border-purple-500/50 transition-all duration-300 shadow-lg hover:shadow-xl hover:shadow-purple-500/20"
+          className="relative h-11 w-full backdrop-blur-md bg-card/60 border-2 border-transparent bg-gradient-to-r from-purple-500/30 via-blue-500/30 to-cyan-500/30 bg-clip-padding hover:border-purple-500/50 transition-all duration-300 shadow-lg hover:shadow-xl hover:shadow-purple-500/20 [appearance:textfield] [-moz-appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
         />
       </div>
     </div>

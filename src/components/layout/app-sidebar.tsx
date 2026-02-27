@@ -5,7 +5,6 @@ import {
   SidebarMenuItem,
   SidebarHeader,
   Sidebar,
-  SidebarTrigger,
 } from '@/components/ui/sidebar';
 
 import { Home, Settings, Sparkles } from 'lucide-react';
@@ -23,9 +22,6 @@ export function AppSidebar() {
 
   return (
     <>
-      {/* Trigger button - widoczny zawsze, szczególnie na mobile */}
-      <SidebarTrigger className="fixed top-4 left-4 z-50 text-white" />
-
       <Sidebar
         className='border-r-accent-foreground'
       >

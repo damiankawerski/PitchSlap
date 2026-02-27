@@ -1,10 +1,11 @@
+use crate::dsp::traits::FilterModule;
+
 #[derive(Clone, Copy, Debug)]
 pub struct NoiseGate {
     threshold: f32,
     attack: f32,
     release: f32,
     envelope: f32,
-    sample_rate: f32,
 }
 
 impl NoiseGate {
@@ -14,7 +15,6 @@ impl NoiseGate {
             attack: (-1.0 / (attack_ms * 0.001 * sample_rate)).exp(),
             release: (-1.0 / (release_ms * 0.001 * sample_rate)).exp(),
             envelope: 0.0,
-            sample_rate,
         }
     }
 
@@ -43,5 +43,16 @@ impl NoiseGate {
 
     pub fn reset(&mut self) {
         self.envelope = 0.0;
+    }
+}
+
+
+impl FilterModule for NoiseGate {
+    fn process(&mut self, input: f32) -> f32 {
+        self.process(input)
+    }
+
+    fn reset(&mut self) {
+        self.reset();
     }
 }

@@ -1,3 +1,5 @@
+use crate::dsp::traits::FilterModule;
+
 pub struct MovingAverageFilter {
     buffer: Vec<f32>,
     index: usize,
@@ -26,5 +28,15 @@ impl MovingAverageFilter {
         self.buffer.fill(0.0);
         self.sum = 0.0;
         self.index = 0;
+    }
+}
+
+impl FilterModule for MovingAverageFilter {
+    fn process(&mut self, input: f32) -> f32 {
+        self.process(input)
+    }
+
+    fn reset(&mut self) {
+        self.reset();
     }
 }

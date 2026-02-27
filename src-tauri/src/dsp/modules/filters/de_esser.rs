@@ -1,4 +1,5 @@
 use super::biquad::*;
+use crate::dsp::traits::FilterModule;
 
 #[derive(Debug)]
 pub struct DeEsser {
@@ -47,5 +48,17 @@ impl DeEsser {
         }
 
         input * self.compressor_gain
+    }
+}
+
+impl FilterModule for DeEsser {
+    fn process(&mut self, input: f32) -> f32 {
+        self.process(input)
+    }
+
+    fn reset(&mut self) {
+        self.detector.reset();
+        self.envelope = 0.0;
+        self.compressor_gain = 1.0;
     }
 }

@@ -24,7 +24,7 @@ impl AudioHandler {
     // default host for now
     pub fn new(options: AudioDeviceOptions) -> Self {
         AudioHandler {
-            audio_devices: AudioDeviceManager::new(cpal::default_host()),
+            audio_devices: AudioDeviceManager::default(),
             options: options,
 
             loopback_handle: None,
