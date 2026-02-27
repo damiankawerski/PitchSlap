@@ -1,40 +1,57 @@
-use super::effect_trait::AudioEffect;
-use super::effects::anime_voice::AnimeVoice;
-use super::effects::robo_voice::RoboVoice;
-use super::effects::reverb::Reverb;
+use crate::dsp::modules::effects::{
+	Amplifier, AutoTune, Bitcrusher, Chorus, Distortion, PitchShifter, Reverb, Scale, Vibrato,
+	Vocoder,
+};
+use crate::dsp::traits::EffectModule;
 
-use once_cell::sync::Lazy;
-use std::sync::Mutex;
+fn normalize_effect_name(name: &str) -> String {
+	name.trim().to_ascii_lowercase().replace(['-', ' '], "_")
+}
 
-use std::collections::HashMap;
+pub fn create_effect_from_name(
+	name: &str,
+	sample_rate: usize,
+	channels: usize,
+) -> Result<Box<dyn EffectModule>, String> {
+	let normalized = normalize_effect_name(name);
+	let channels = channels.max(1);
 
-pub type EffectFactory = fn() -> Box<dyn AudioEffect + Send + Sync>;
+	let effect: Box<dyn EffectModule> = match normalized.as_str() {
+		"amplifier" | "amp" => Box::new(Amplifier::new(1.2)),
+		"distortion" | "drive" => Box::new(Distortion::new(8.0)),
+		"bitcrusher" | "bit_crusher" => Box::new(Bitcrusher::new(8.0, 4)),
+		"chorus" => Box::new(Chorus::new(sample_rate, 0.35, 0.45)),
+		"vibrato" => Box::new(Vibrato::new(5.0, 0.6, 0.5, sample_rate as f32)),
+		"pitch_shifter" | "pitchshifter" | "pitch" => {
+			Box::new(PitchShifter::new(30, sample_rate, 0.0, 8))
+		}
+		"auto_tune" | "autotune" => {
+			let mut auto_tune = AutoTune::new(sample_rate as f32);
+			auto_tune.set_scale(Scale::CMajor);
+			auto_tune.set_correction_speed(0.95);
+			auto_tune.set_max_sustain(200.0);
+			auto_tune.set_power_threshold(0.05);
+			auto_tune.set_clarity_threshold(0.30);
+			Box::new(auto_tune)
+		}
+		"reverb" => {
+			let mut reverb = Reverb::new(sample_rate as u32, channels);
+			reverb.set_room_size(0.5);
+			reverb.set_damping(0.5);
+			reverb.set_wet_level(0.30);
+			reverb.set_dry_level(0.70);
+			Box::new(reverb)
+		}
+		"vocoder" => Box::new(Vocoder::new(sample_rate)),
+		"vocoder_daft_punk" | "daft_punk" => Box::new(Vocoder::daft_punk(sample_rate)),
+		_ => {
+			return Err(format!(
+				"Unknown effect name: '{}'. Supported effects: amplifier, distortion, bitcrusher, chorus, vibrato, pitch_shifter, auto_tune, reverb, vocoder",
+				name
+			))
+		}
+	};
 
-pub static EFFECTS: Lazy<Mutex<HashMap<String, EffectFactory>>> = Lazy::new(|| {
-    let mut map = HashMap::new();
-    fn anime_voice_factory() -> Box<dyn AudioEffect + Send + Sync> {
-        Box::new(AnimeVoice::new())
-    }
-    fn robo_voice_factory() -> Box<dyn AudioEffect + Send + Sync> {
-        Box::new(RoboVoice::new())
-    }
-    fn reverb_factory() -> Box<dyn AudioEffect + Send + Sync> {
-        Box::new(Reverb::new(0.5))
-    }
-    fn chorus_factory() -> Box<dyn AudioEffect + Send + Sync> {
-        Box::new(crate::dsp::effects::chorus::Chorus::new(0.5))
-    }
-    fn chipmunk_factory() -> Box<dyn AudioEffect + Send + Sync> {
-        Box::new(crate::dsp::effects::chipmunk::ChipmunkVoice::new())
-    }
-    fn demon_factory() -> Box<dyn AudioEffect + Send + Sync> {
-        Box::new(crate::dsp::effects::demon::DemonVoice::new())
-    }
-    map.insert("Chorus".into(), chorus_factory as EffectFactory);
-    map.insert("ChipmunkVoice".into(), chipmunk_factory as EffectFactory);
-    map.insert("DemonVoice".into(), demon_factory as EffectFactory);
-    map.insert("AnimeVoice".into(), anime_voice_factory as EffectFactory);
-    map.insert("RoboVoice".into(), robo_voice_factory as EffectFactory);
-    map.insert("Reverb".into(), reverb_factory as EffectFactory);
-    Mutex::new(map)
-});
+	Ok(effect)
+}
+

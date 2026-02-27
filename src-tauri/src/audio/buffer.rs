@@ -1,11 +1,10 @@
 // Buffer to hold consumer and produder for audio data
 // Made to single input - single output audio processing
-// For loopback implementation you should create new Stream 
+// For loopback implementation you should create new Stream
 
-use ringbuf::{traits::Split, HeapRb};
 use ringbuf::consumer::Consumer;
 use ringbuf::producer::Producer;
-
+use ringbuf::{HeapRb, traits::Split};
 
 // AudioBuffer struct to hold the audio data buffer
 pub struct AudioBuffer {
@@ -30,20 +29,16 @@ impl AudioBuffer {
             producer.try_push(0.0).unwrap();
         }
 
-        AudioBuffer {
-            producer,
-            consumer,
-        }
+        AudioBuffer { producer, consumer }
     }
 
     // Write audio data to the buffer (tries to write all data from slice) (could add output fell behind check)
     pub fn buffer_write(&mut self, data: &[f32]) -> anyhow::Result<()> {
         let mut output_fell_behind = false;
         for &sample in data {
-            
             if self.producer.try_push(sample).is_err() {
                 output_fell_behind = true;
-                break; 
+                break;
             }
         }
         if output_fell_behind {
@@ -52,41 +47,59 @@ impl AudioBuffer {
         Ok(())
     }
 
-    // Read audio data from the buffer (tries to read all data into slice)
-    pub fn buffer_read(&mut self, data: &mut [f32], input_channels: usize, output_channels: usize) -> anyhow::Result<()> {
-        let mut input_fell_behind = false;
-        
-        // Use external channel conversion function
-        convert_audio_channels(
-            input_channels,
-            output_channels,
-            data,
-            &mut || {
-                match self.consumer.try_pop() {
-                    Some(s) => s,
-                    None => {
-                        input_fell_behind = true;
-                        0.0
-                    }
-                }
+    pub fn buffer_write_and_record(
+        &mut self,
+        data: &[f32],
+        recording_buffer: &mut Vec<f32>,
+    ) -> anyhow::Result<()> {
+        let mut output_fell_behind = false;
+        for &sample in data {
+            if self.producer.try_push(sample).is_err() {
+                output_fell_behind = true;
+                break;
             }
-        )?;
-        
-        if input_fell_behind {
-            eprintln!("input stream fell behind: try increasing latency");
+            recording_buffer.push(sample);
+        }
+        if output_fell_behind {
+            eprintln!("Output buffer fell behind, some samples were dropped.");
         }
         Ok(())
     }
+
+    // Read audio data from the buffer (tries to read all data into slice)
+    pub fn buffer_read(
+        &mut self,
+        data: &mut [f32],
+        input_channels: usize,
+        output_channels: usize,
+    ) -> anyhow::Result<()> {
+        let mut input_fell_behind = false;
+
+        // Use external channel conversion function
+        convert_audio_channels(input_channels, output_channels, data, &mut || match self
+            .consumer
+            .try_pop()
+        {
+            Some(s) => s,
+            None => {
+                input_fell_behind = true;
+                0.0
+            }
+        })?;
+
+        if input_fell_behind {
+            eprintln!("input stream fell behind: try increasing latency");
+        }
+
+        Ok(())
+    }
 }
-    
-
-
 
 fn convert_audio_channels<F>(
     input_channels: usize,
     output_channels: usize,
     data: &mut [f32],
-    sample_provider: &mut F
+    sample_provider: &mut F,
 ) -> anyhow::Result<()>
 where
     F: FnMut() -> f32,
@@ -123,16 +136,14 @@ where
         _ => {
             // Unsupported channel configuration
             return Err(anyhow::anyhow!(
-                "Unsupported channel configuration: {} input channels, {} output channels", 
-                input_channels, 
+                "Unsupported channel configuration: {} input channels, {} output channels",
+                input_channels,
                 output_channels
             ));
         }
     }
-    
+
     Ok(())
 }
-
-
 
 // To też powinno działać bosko

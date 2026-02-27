@@ -1,9 +1,10 @@
 use super::device::*;
 use super::engine::*;
+use crate::dsp::modulation_unit::ModulationUnit;
+use crate::dsp::modules::utils::ParameterValue;
 use std::sync::{Arc, Mutex};
 use std::thread::{self, JoinHandle};
 use std::time::Duration;
-use crate::dsp::modulation_unit::ModulationUnit;
 
 pub struct AudioHandler {
     options: AudioDeviceOptions,
@@ -18,27 +19,50 @@ pub struct AudioHandler {
     throughput_running: bool,
 
     modulation_unit: Option<Arc<Mutex<ModulationUnit>>>,
+
+    recorder_active: bool,
 }
 
 impl AudioHandler {
     // default host for now
     pub fn new(options: AudioDeviceOptions) -> Self {
         AudioHandler {
-            audio_devices: AudioDeviceManager::new(cpal::default_host()),
+            audio_devices: AudioDeviceManager::default(),
             options: options,
 
             loopback_handle: None,
             loopback_control: None,
             loopback_running: false,
-            
+
             throughput_handle: None,
             throughput_control: None,
             throughput_running: false,
 
-            modulation_unit: Some(Arc::new(Mutex::new(ModulationUnit::new(
-                444100.0, // Default sample rate, can be changed later
-            )))),
+            modulation_unit: Some(Arc::new(Mutex::new(ModulationUnit::new(44100)))),
+
+            recorder_active: false,
         }
+    }
+
+    // Set app handle (call this from Tauri setup or command)
+    pub fn set_app_handle(&mut self, handle: tauri::AppHandle) -> anyhow::Result<()> {
+        self.modulation_unit
+            .as_ref()
+            .unwrap()
+            .lock()
+            .unwrap()
+            .set_app_handle(handle);
+        Ok(())
+    }
+
+    pub fn clear_app_handle(&mut self) -> anyhow::Result<()> {
+        self.modulation_unit
+            .as_ref()
+            .unwrap()
+            .lock()
+            .unwrap()
+            .clear_app_handle();
+        Ok(())
     }
 
     // Getter for current audio devices
@@ -64,20 +88,23 @@ impl AudioHandler {
     pub fn select_audio_devices(&mut self, opt: &AudioDeviceOptions) -> anyhow::Result<()> {
         self.audio_devices.select_devices_from_options(opt)?;
         self.options = opt.clone();
-        self.modulation_unit = Some(Arc::new(Mutex::new(ModulationUnit::new(self.audio_devices.get_input_device().unwrap().get_config().sample_rate.0 as f32))));
+        self.modulation_unit = Some(Arc::new(Mutex::new(ModulationUnit::new(
+            self.audio_devices
+                .get_input_device()
+                .unwrap()
+                .get_config()
+                .sample_rate
+                .0 as usize,
+        ))));
         // Restart engine if it is running
         self.restart()?;
 
         Ok(())
-    } 
+    }
 
     // Modulation unit methods
     pub fn get_modulation_unit(&self) -> Option<Arc<Mutex<ModulationUnit>>> {
-        if let Some(ref unit) = self.modulation_unit {
-            Some(Arc::clone(unit))
-        } else {
-            None
-        }
+        self.modulation_unit.as_ref().map(Arc::clone)
     }
 
     pub fn enable_modulation(&mut self) -> anyhow::Result<()> {
@@ -100,45 +127,83 @@ impl AudioHandler {
         Ok(())
     }
 
-    pub fn get_effects_list() -> Vec<String> {
-        ModulationUnit::get_effects_list()
-    }
-
-    pub fn set_effect_from_string(&mut self, effect_name: &str) -> anyhow::Result<()> {
+    pub fn append_effect_to_modulation(&mut self, effect_name: &str) -> anyhow::Result<()> {
         if let Some(ref unit) = self.modulation_unit {
             let mut unit = unit.lock().unwrap();
-            unit.set_from_string(effect_name);
+            unit.append_effect_from_name(effect_name)?;
         }
         self.restart()?;
 
         Ok(())
     }
 
-    pub fn is_modulation_active(&self) -> bool {
-        if let Some(ref unit) = self.modulation_unit {
-            let unit = unit.lock().unwrap();
-            unit.is_active()
-        } else {
-            false
-        }
-    }
-    
-    pub fn get_current_effect_name(&self) -> Option<String> {
-        if let Some(ref unit) = self.modulation_unit {
-            let unit = unit.lock().unwrap();
-            unit.get_current_effect_name()
-        } else {
-            None
-        }
-    }
-
-    pub fn clear_effect(&mut self) -> anyhow::Result<()> {
+    pub fn set_effect_parameter(
+        &mut self,
+        effect_name: &str,
+        parameter: ParameterValue,
+    ) -> anyhow::Result<()> {
         if let Some(ref unit) = self.modulation_unit {
             let mut unit = unit.lock().unwrap();
-            unit.clear_effect();
+            unit.set_effect_parameter(effect_name, parameter)?;
         }
         self.restart()?;
 
+        Ok(())
+    }
+
+    pub fn remove_effect_from_modulation(&mut self, effect_name: &str) -> anyhow::Result<()> {
+        if let Some(ref unit) = self.modulation_unit {
+            let mut unit = unit.lock().unwrap();
+            unit.remove_effect_from_name(effect_name);
+        }
+        self.restart()?;
+
+        Ok(())
+    }
+
+    pub fn set_auto_tune_scale(
+        &mut self,
+        scale: crate::dsp::modules::effects::auto_tune::Scale,
+    ) -> anyhow::Result<()> {
+        if let Some(ref unit) = self.modulation_unit {
+            let mut unit = unit.lock().unwrap();
+            unit.set_auto_tune_scale(scale)?;
+        }
+        self.restart()?;
+
+        Ok(())
+    }
+
+    pub fn get_effect_parameters(
+        &self,
+        effect_name: &str,
+    ) -> anyhow::Result<Vec<crate::dsp::modules::utils::EffectParameter>> {
+        if let Some(ref unit) = self.modulation_unit {
+            let unit = unit.lock().unwrap();
+            unit.get_effect_parameters(effect_name)
+        } else {
+            Err(anyhow::anyhow!("No modulation unit available"))
+        }
+    }
+
+    pub fn get_active_effects(&self) -> Vec<String> {
+        if let Some(ref unit) = self.modulation_unit {
+            let unit = unit.lock().unwrap();
+            unit.get_active_effects()
+        } else {
+            vec![]
+        }
+    }
+
+    pub fn start_recording(&mut self) -> anyhow::Result<()> {
+        self.recorder_active = true;
+        self.restart()?;
+        Ok(())
+    }
+
+    pub fn stop_recording(&mut self) -> anyhow::Result<()> {
+        self.recorder_active = false;
+        self.restart()?;
         Ok(())
     }
 
@@ -149,30 +214,33 @@ impl AudioHandler {
         }
 
         // Verify we have required devices
-        let input_device = self.audio_devices.get_input_device()
+        let input_device = self
+            .audio_devices
+            .get_input_device()
             .ok_or_else(|| anyhow::anyhow!("No input device available"))?;
-        let output_device = self.audio_devices.get_output_device()
+        let output_device = self
+            .audio_devices
+            .get_output_device()
             .ok_or_else(|| anyhow::anyhow!("No output device available"))?;
 
         // Clone devices and options for the thread
         let input_device_clone = AudioDevice::new(
             input_device.get_device().clone(),
-            input_device.get_config().clone()
+            input_device.get_config().clone(),
         );
         let output_device_clone = AudioDevice::new(
             output_device.get_device().clone(),
-            output_device.get_config().clone()
+            output_device.get_config().clone(),
         );
         let options_clone = self.options.clone();
 
         // Create control flag
         let control = Arc::new(Mutex::new(true));
         self.loopback_control = Some(Arc::clone(&control));
-        
-        let mut modulation_unit_clone: Option<Arc<Mutex<ModulationUnit>>> = None;
-        if self.modulation_unit.is_some() {
-            modulation_unit_clone = Some(Arc::clone(self.modulation_unit.as_ref().unwrap()));
-        }
+
+        // Clone modulation unit if exists
+        let modulation_unit_clone = self.modulation_unit.as_ref().map(Arc::clone);
+        let recorder_active = self.recorder_active;
 
         // Spawn audio processing thread
         let handle = thread::spawn(move || {
@@ -182,6 +250,7 @@ impl AudioHandler {
                 options_clone,
                 control,
                 modulation_unit_clone,
+                recorder_active,
             );
         });
 
@@ -205,7 +274,8 @@ impl AudioHandler {
 
         // Wait for thread to finish
         if let Some(handle) = self.loopback_handle.take() {
-            handle.join()
+            handle
+                .join()
                 .map_err(|_| anyhow::anyhow!("Failed to join audio thread"))?;
         }
 
@@ -217,33 +287,39 @@ impl AudioHandler {
 
     pub fn start_audio_engine_throughput(&mut self) -> anyhow::Result<()> {
         if self.throughput_running {
-            return Err(anyhow::anyhow!("Throughput audio engine is already running"));
+            return Err(anyhow::anyhow!(
+                "Throughput audio engine is already running"
+            ));
         }
 
         // Verify we have required devices
-        let input_device = self.audio_devices.get_input_device()
+        let input_device = self
+            .audio_devices
+            .get_input_device()
             .ok_or_else(|| anyhow::anyhow!("No input device available"))?;
-        let output_device = self.audio_devices.get_virtual_input()
+        let output_device = self
+            .audio_devices
+            .get_virtual_input()
             .ok_or_else(|| anyhow::anyhow!("No output device available"))?;
 
         // Clone devices and options for the thread
         let input_device_clone = AudioDevice::new(
             input_device.get_device().clone(),
-            input_device.get_config().clone()
+            input_device.get_config().clone(),
         );
         let output_device_clone = AudioDevice::new(
             output_device.get_device().clone(),
-            output_device.get_config().clone()
+            output_device.get_config().clone(),
         );
         let options_clone = self.options.clone();
 
         // Create control flag
         let control = Arc::new(Mutex::new(true));
         self.throughput_control = Some(Arc::clone(&control));
-        let mut modulation_unit_clone: Option<Arc<Mutex<ModulationUnit>>> = None;
-        if self.modulation_unit.is_some() {
-            modulation_unit_clone = Some(Arc::clone(self.modulation_unit.as_ref().unwrap()));
-        }
+
+        // Clone modulation unit if exists
+        let modulation_unit_clone = self.modulation_unit.as_ref().map(Arc::clone);
+        let recorder_active = self.recorder_active;
 
         // Spawn audio processing thread
         let handle = thread::spawn(move || {
@@ -253,6 +329,7 @@ impl AudioHandler {
                 options_clone,
                 control,
                 modulation_unit_clone,
+                recorder_active,
             );
         });
 
@@ -276,7 +353,8 @@ impl AudioHandler {
 
         // Wait for thread to finish
         if let Some(handle) = self.throughput_handle.take() {
-            handle.join()
+            handle
+                .join()
                 .map_err(|_| anyhow::anyhow!("Failed to join audio thread"))?;
         }
 
@@ -313,10 +391,16 @@ impl AudioHandler {
         options: AudioDeviceOptions,
         control: Arc<Mutex<bool>>,
         modulation_unit: Option<Arc<Mutex<ModulationUnit>>>,
+        recorder_active: bool,
     ) {
-
         // Create the audio engine
-        let audio_engine = match AudioEngine::new(&input_device, &output_device, &options, modulation_unit) {
+        let audio_engine = match AudioEngine::new(
+            &input_device,
+            &output_device,
+            &options,
+            modulation_unit,
+            recorder_active,
+        ) {
             Ok(engine) => engine,
             Err(e) => {
                 eprintln!("Failed to create audio engine: {}", e);
@@ -350,10 +434,7 @@ impl AudioHandler {
         if let Err(e) = audio_engine.stop() {
             eprintln!("Failed to stop audio engine: {}", e);
         }
-
     }
-
-
 }
 
 impl Drop for AudioHandler {
