@@ -1,3 +1,5 @@
+use serde::{Serialize, Deserialize};
+
 use super::pitch_shifter::PitchShifter;
 use crate::dsp::modules::yin_detector::detector::PitchDetector;
 use crate::dsp::modules::yin_detector::detector::yin::YINDetector;
@@ -5,7 +7,7 @@ use crate::dsp::traits::EffectModule;
 use std::collections::VecDeque;
 use crate::dsp::modules::utils::effect_parameter::{EffectParameter, ParameterValue};
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Scale {
     CMajor,
     AMajor,
@@ -223,14 +225,13 @@ impl EffectModule for AutoTune {
         self.pitch_shifter.reset();
     }
 
-    fn get_parameters(&self, name: &str) -> Vec<EffectParameter> {
-        match name {
-            "correction_speed" => vec![self.correction_speed.clone()],
-            "detection_window_size" => vec![self.detection_window_size.clone()],
-            "power_threshold" => vec![self.power_threshold.clone()],
-            "clarity_threshold" => vec![self.clarity_threshold.clone()],
-            _ => vec![],
-        }
+    fn get_parameters(&self) -> Vec<EffectParameter> {
+        vec![
+            self.correction_speed.clone(),
+            self.detection_window_size.clone(),
+            self.power_threshold.clone(),
+            self.clarity_threshold.clone(),
+        ]
     }
 
     fn set_parameter(&mut self, parameter: ParameterValue) -> anyhow::Result<()> {

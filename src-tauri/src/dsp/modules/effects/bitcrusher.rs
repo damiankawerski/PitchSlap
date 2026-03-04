@@ -51,11 +51,8 @@ impl EffectModule for Bitcrusher {
         "bitcrusher"
     }
 
-    fn get_parameters(&self, name: &str) -> Vec<EffectParameter> {
-        match name {
-            "bit_depth" => vec![self.bit_depth.clone()],
-            _ => vec![],
-        }
+    fn get_parameters(&self) -> Vec<EffectParameter> {
+        vec![self.bit_depth.clone()]
     }
 
     fn set_parameter(&mut self, parameter: crate::dsp::modules::utils::ParameterValue) -> anyhow::Result<()> {

@@ -75,10 +75,7 @@ impl EffectModule for Vibrato {
         }
     }
 
-    fn get_parameters(&self, name: &str) -> Vec<EffectParameter> {
-        match name {
-            "intensity" => vec![self.intensity.clone()],
-            _ => vec![],
-        }
+    fn get_parameters(&self) -> Vec<EffectParameter> {
+        vec![self.intensity.clone()]
     }
 }

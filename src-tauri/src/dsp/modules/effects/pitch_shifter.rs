@@ -212,11 +212,8 @@ impl EffectModule for PitchShifter {
         "pitchshifter"
     }
 
-    fn get_parameters(&self, name: &str) -> Vec<EffectParameter> {
-        match name {
-            "shift" => vec![self.shift.clone()],
-            _ => vec![],
-        }
+    fn get_parameters(&self) -> Vec<EffectParameter> {
+        vec![self.shift.clone()]
     }
 
     fn set_parameter(&mut self, parameter: ParameterValue) -> anyhow::Result<()> {

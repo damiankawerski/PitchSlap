@@ -202,14 +202,8 @@ impl EffectModule for Reverb {
         }
     }
 
-    fn get_parameters(&self, name: &str) -> Vec<EffectParameter> {
-        match name {
-            "room_size" => vec![self.room_size.clone()],
-            "damping" => vec![self.damping.clone()],
-            "wet_level" => vec![self.wet_level.clone()],
-            "dry_level" => vec![self.dry_level.clone()],
-            _ => vec![],
-        }
+    fn get_parameters(&self) -> Vec<EffectParameter> {
+        vec![self.room_size.clone(), self.damping.clone(), self.wet_level.clone(), self.dry_level.clone()]
     }
 
 }

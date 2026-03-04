@@ -30,6 +30,8 @@ pub fn run() {
             super::modulation_conf::remove_effect,
             super::modulation_conf::set_effect_parameter,
             super::modulation_conf::get_active_effects,
+            super::modulation_conf::get_parameters,
+            super::modulation_conf::set_auto_tune_scale,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

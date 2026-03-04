@@ -128,7 +128,7 @@ impl EffectChain for ModulationChain {
         &mut self,
         scale: crate::dsp::modules::effects::Scale,
     ) -> anyhow::Result<()> {
-        if let Some(effect) = self.effects.iter_mut().find(|e| e.name() == "AutoTune") {
+        if let Some(effect) = self.effects.iter_mut().find(|e| e.name() == "autotune") {
             effect.set_scale(scale)
         } else {
             Err(anyhow::anyhow!("AutoTune effect not found in chain"))
@@ -144,7 +144,12 @@ impl EffectChain for ModulationChain {
         effect_name: &str,
     ) -> anyhow::Result<Vec<crate::dsp::modules::utils::EffectParameter>> {
         if let Some(effect) = self.effects.iter().find(|e| e.name() == effect_name) {
-            Ok(effect.get_parameters(effect_name))
+            println!(
+                "Getting parameters for effect '{}': {:?}",
+                effect_name,
+                effect.get_parameters()
+            );
+            Ok(effect.get_parameters())
         } else {
             Err(anyhow::anyhow!(
                 "Effect '{}' not found in chain",

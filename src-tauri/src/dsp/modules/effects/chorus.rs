@@ -69,12 +69,8 @@ impl EffectModule for Chorus {
         self.lfo.reset();
     }
 
-    fn get_parameters(&self, name: &str) -> Vec<EffectParameter> {
-        match name {
-            "depth" => vec![self.depth.clone()],
-            "mix" => vec![self.mix.clone()],
-            _ => vec![],
-        }
+    fn get_parameters(&self) -> Vec<EffectParameter> {
+        vec![self.depth.clone(), self.mix.clone()]
     }
 
     fn set_parameter(&mut self, parameter: crate::dsp::modules::utils::ParameterValue) -> anyhow::Result<()> {

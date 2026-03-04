@@ -1,9 +1,16 @@
 import { createFileRoute } from '@tanstack/react-router'
+import { BitCrusherSettings } from '@/components/effect_settings/bit-crusher'
 
 export const Route = createFileRoute('/modulation/bit-crusher')({
   component: RouteComponent,
 })
 
 function RouteComponent() {
-  return <div>Hello "/modulation/bit-crusher"!</div>
+  return (
+    <div className="container mx-auto p-6 max-w-xl space-y-6">
+      <h1 className="text-2xl font-bold">Bit Crusher Settings</h1>
+      <BitCrusherSettings />
+    </div>
+  )
 }
+

@@ -305,24 +305,23 @@ impl EffectModule for Vocoder {
 		}
 	}
 
-	fn get_parameters(&self, name: &str) -> Vec<EffectParameter> {
-		match name {
-			"band_count" => vec![self.band_count.clone()],
-			"min_freq" => vec![self.min_freq.clone()],
-			"max_freq" => vec![self.max_freq.clone()],
-			"q" => vec![self.q.clone()],
-			"attack_ms" => vec![self.attack_ms.clone()],
-			"release_ms" => vec![self.release_ms.clone()],
-			"output_gain" => vec![self.output_gain.clone()],
-			"dry_mix" => vec![self.dry_mix.clone()],
-			"env_gain" => vec![self.env_gain.clone()],
-			"env_floor" => vec![self.env_floor.clone()],
-			"soft_clip" => vec![self.soft_clip.clone()],
-			"reverb_mix" => vec![self.reverb_mix.clone()],
-			"carrier_base_freq" => vec![self.carrier_base_freq.clone()],
-			"carrier_harmonics" => vec![self.carrier_harmonics.clone()],
-			"carrier_gain" => vec![self.carrier_gain.clone()],
-			_ => vec![],
-		}
+	fn get_parameters(&self) -> Vec<EffectParameter> {
+		vec![
+			self.band_count.clone(),
+			self.min_freq.clone(),
+			self.max_freq.clone(),
+			self.q.clone(),
+			self.attack_ms.clone(),
+			self.release_ms.clone(),
+			self.output_gain.clone(),
+			self.dry_mix.clone(),
+			self.env_gain.clone(),
+			self.env_floor.clone(),
+			self.soft_clip.clone(),
+			self.reverb_mix.clone(),
+			self.carrier_base_freq.clone(),
+			self.carrier_harmonics.clone(),
+			self.carrier_gain.clone(),
+		]
 	}
 }

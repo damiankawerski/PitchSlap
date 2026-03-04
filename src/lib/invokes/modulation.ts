@@ -69,3 +69,21 @@ export async function get_active_effects() {
     return [];
   }
 }
+
+export type EffectParameter = {
+  name: string;
+  value: number;
+  min_value: number;
+  max_value: number;
+  default_value: number;
+};
+
+export async function get_parameters(effectName: string): Promise<EffectParameter[]> {
+  try {
+    const parameters: EffectParameter[] = await invoke('get_parameters', { effectName });
+    return parameters;
+  } catch (error) {
+    console.error('Error invoking get_parameters:', error);
+    return [];
+  }
+}

@@ -1,4 +1,6 @@
-#[derive(Debug, Clone)]
+use serde::{Deserialize, Serialize};
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct EffectParameter {
     pub name: String,
     pub value: f32,
@@ -7,6 +9,7 @@ pub struct EffectParameter {
     pub default_value: f32,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ParameterValue {
     pub name: String,
     pub value: f32,

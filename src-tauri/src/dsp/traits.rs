@@ -7,7 +7,7 @@ pub trait EffectModule: Send {
     fn reset(&mut self);
     fn name(&self) -> &str; 
     fn set_parameter(&mut self, parameter: ParameterValue) -> anyhow::Result<()>;
-    fn get_parameters(&self, name: &str) -> Vec<EffectParameter>;
+    fn get_parameters(&self) -> Vec<EffectParameter>;
     fn set_scale(&mut self, _scale: Scale) -> anyhow::Result<()> {
         Err(anyhow::anyhow!("This effect does not support setting a scale"))
     }

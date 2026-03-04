@@ -6,7 +6,6 @@ use super::modules::chains::modulation_chain::*;
 use super::modules::visualizer::fft_visualizer::*;
 use super::modules::utils::ParameterValue;
 use super::traits::{EffectChain, FilterChain};
-use crate::dsp::modules::effects::*;
 use crate::dsp::traits::EffectModule;
 use super::effect_factory::create_effect_from_name;
 
@@ -19,7 +18,7 @@ pub struct AudioProcessor {
 
 impl AudioProcessor {
     pub fn new(sample_rate: usize) -> Self {
-        let mut modulation_chain = ModulationChain::new();
+        let modulation_chain = ModulationChain::new();
 
         AudioProcessor {
             fft_visualizer: SpectrumVisualizer::new(sample_rate, 480),

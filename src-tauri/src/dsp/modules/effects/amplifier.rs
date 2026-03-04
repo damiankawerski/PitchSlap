@@ -26,11 +26,8 @@ impl EffectModule for Amplifier {
         "amplifier"
     }
 
-    fn get_parameters(&self, name: &str) -> Vec<EffectParameter> {
-        match name {
-            "gain" => vec![self.gain.clone()],
-            _ => vec![],
-        }
+    fn get_parameters(&self) -> Vec<EffectParameter> {
+        vec![self.gain.clone()]
     }
 
     fn set_parameter(&mut self, parameter: crate::dsp::modules::utils::ParameterValue) -> anyhow::Result<()> {
