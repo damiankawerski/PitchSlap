@@ -31,9 +31,16 @@ export function CustomInputNumber({
   return (
     <div className={`flex flex-col gap-3 w-full ${className}`}>
       {label && (
-        <label className="text-sm font-semibold text-secondary tracking-wide transition-colors duration-200">
-          {label}
-        </label>
+        <div className="flex items-baseline justify-between">
+          <label className="text-sm font-semibold text-white tracking-wide transition-colors duration-200">
+            {label}
+          </label>
+          {(min !== undefined || max !== undefined) && (
+            <span className="text-xs text-muted-foreground">
+              {min !== undefined ? min : '–'} – {max !== undefined ? max : '–'}
+            </span>
+          )}
+        </div>
       )}
 
       <div className="relative w-full group">
@@ -55,7 +62,7 @@ export function CustomInputNumber({
             if (!onChange) return;
             onChange(raw === "" ? null : Number(raw));
           }}
-          className="relative h-11 w-full backdrop-blur-md bg-card/60 border-2 border-transparent bg-gradient-to-r from-purple-500/30 via-blue-500/30 to-cyan-500/30 bg-clip-padding hover:border-purple-500/50 transition-all duration-300 shadow-lg hover:shadow-xl hover:shadow-purple-500/20 [appearance:textfield] [-moz-appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+          className="relative h-11 w-full text-white backdrop-blur-md bg-card/60 border-2 border-transparent bg-gradient-to-r from-purple-500/30 via-blue-500/30 to-cyan-500/30 bg-clip-padding hover:border-purple-500/50 transition-all duration-300 shadow-lg hover:shadow-xl hover:shadow-purple-500/20 [appearance:textfield] [-moz-appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
         />
       </div>
     </div>

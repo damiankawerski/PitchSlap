@@ -11,6 +11,9 @@ pub trait EffectModule: Send {
     fn set_scale(&mut self, _scale: Scale) -> anyhow::Result<()> {
         Err(anyhow::anyhow!("This effect does not support setting a scale"))
     }
+    fn get_scale(&self) -> Option<Scale> {
+        None
+    }
 }
 
 pub trait EffectChain {
@@ -21,6 +24,7 @@ pub trait EffectChain {
     fn remove_effect_from_name(&mut self, name: &str) -> Option<Box<dyn EffectModule>>;
     fn set_effect_parameter(&mut self, effect_name: &str, parameter: ParameterValue) -> anyhow::Result<()>;
     fn set_auto_tune_scale(&mut self, scale_name: Scale) -> anyhow::Result<()>;
+    fn get_auto_tune_scale(&self) -> Option<Scale>;
     fn get_effect_parameters(&self, effect_name: &str) -> anyhow::Result<Vec<EffectParameter>>;
     fn get_active_effects(&self) -> Vec<String>;
 }

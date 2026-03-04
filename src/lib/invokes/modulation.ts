@@ -60,6 +60,16 @@ export async function set_auto_tune_scale(scale: string) {
   }
 }
 
+export async function get_auto_tune_scale() {
+  try {
+    const scale: string | null = await invoke('get_auto_tune_scale');
+    return scale;
+  } catch (error) {
+    console.error('Error invoking get_auto_tune_scale:', error);
+    return null;
+  }
+}
+
 export async function get_active_effects() {
   try {
     const activeEffects: string[] = await invoke('get_active_effects');

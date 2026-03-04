@@ -54,6 +54,10 @@ impl ModulationUnit {
         self.audio_processor.set_auto_tune_scale(scale)
     }
 
+    pub fn get_auto_tune_scale(&self) -> Option<crate::dsp::modules::effects::auto_tune::Scale> {
+        self.audio_processor.get_auto_tune_scale()
+    }
+
     pub fn get_active_effects(&self) -> Vec<String> {
         self.audio_processor.get_active_effects()
     }

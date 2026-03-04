@@ -87,10 +87,6 @@ impl EffectChain for ModulationChain {
 
     fn append_effect(&mut self, effect: Box<dyn EffectModule>) {
         self.effects.push(effect);
-        println!(
-            "Current effects in chain: {:?}",
-            self.effects.iter().map(|e| e.name()).collect::<Vec<_>>()
-        );
     }
 
     fn remove_effect_from_name(&mut self, name: &str) -> Option<Box<dyn EffectModule>> {
@@ -135,6 +131,14 @@ impl EffectChain for ModulationChain {
         }
     }
 
+    fn get_auto_tune_scale(&self) -> Option<crate::dsp::modules::effects::Scale> {
+        if let Some(effect) = self.effects.iter().find(|e| e.name() == "autotune") {
+            effect.get_scale()
+        } else {
+            None
+        }
+    }
+
     fn get_active_effects(&self) -> Vec<String> {
         self.effects.iter().map(|e| e.name().to_string()).collect()
     }
@@ -144,11 +148,6 @@ impl EffectChain for ModulationChain {
         effect_name: &str,
     ) -> anyhow::Result<Vec<crate::dsp::modules::utils::EffectParameter>> {
         if let Some(effect) = self.effects.iter().find(|e| e.name() == effect_name) {
-            println!(
-                "Getting parameters for effect '{}': {:?}",
-                effect_name,
-                effect.get_parameters()
-            );
             Ok(effect.get_parameters())
         } else {
             Err(anyhow::anyhow!(

@@ -122,7 +122,7 @@ impl AudioStreams {
         Ok(())
     }
 
-    pub fn stop_output_stream(&self) -> anyhow::Result<()> {
+    pub fn stop_output_stream(&self, file_save_path: Option<String>) -> anyhow::Result<()> {
         self.output_stream.pause()?;
         if let Some(recording) = &self.recording_buffer {
             if let Ok(recording) = recording.lock() {
@@ -130,6 +130,7 @@ impl AudioStreams {
                     &recording,
                     self.record_sample_rate,
                     self.record_channels,
+                    file_save_path
                 )?;
             }
         }

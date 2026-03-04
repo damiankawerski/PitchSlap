@@ -20,7 +20,8 @@ pub struct AudioHandler {
 
     modulation_unit: Option<Arc<Mutex<ModulationUnit>>>,
 
-    recorder_active: bool,
+    recorder_active: bool, 
+    file_save_path: Option<String>,
 }
 
 impl AudioHandler {
@@ -41,6 +42,7 @@ impl AudioHandler {
             modulation_unit: Some(Arc::new(Mutex::new(ModulationUnit::new(44100)))),
 
             recorder_active: false,
+            file_save_path: None,
         }
     }
 
@@ -63,6 +65,15 @@ impl AudioHandler {
             .unwrap()
             .clear_app_handle();
         Ok(())
+    }
+
+    pub fn is_app_handle_set(&self) -> bool {
+        if let Some(ref unit) = self.modulation_unit {
+            let unit = unit.lock().unwrap();
+            unit.is_app_handle_set()
+        } else {
+            false
+        }
     }
 
     // Getter for current audio devices
@@ -174,6 +185,15 @@ impl AudioHandler {
         Ok(())
     }
 
+    pub fn get_auto_tune_scale(&self) -> Option<crate::dsp::modules::effects::auto_tune::Scale> {
+        if let Some(ref unit) = self.modulation_unit {
+            let unit = unit.lock().unwrap();
+            unit.get_auto_tune_scale()
+        } else {
+            None
+        }
+    }
+
     pub fn get_effect_parameters(
         &self,
         effect_name: &str,
@@ -205,6 +225,19 @@ impl AudioHandler {
         self.recorder_active = false;
         self.restart()?;
         Ok(())
+    }
+
+    pub fn set_file_save_path(&mut self, path: Option<String>) -> anyhow::Result<()> {
+        self.file_save_path = path;
+        Ok(())    
+    }
+
+    pub fn is_recording(&self) -> bool {
+        self.recorder_active
+    }
+
+    pub fn get_file_save_path(&self) -> Option<String> {
+        self.file_save_path.clone()
     }
 
     // Start and stop audio engine for loopback mode
@@ -241,6 +274,7 @@ impl AudioHandler {
         // Clone modulation unit if exists
         let modulation_unit_clone = self.modulation_unit.as_ref().map(Arc::clone);
         let recorder_active = self.recorder_active;
+        let file_save_path = self.file_save_path.clone();
 
         // Spawn audio processing thread
         let handle = thread::spawn(move || {
@@ -251,6 +285,7 @@ impl AudioHandler {
                 control,
                 modulation_unit_clone,
                 recorder_active,
+                file_save_path
             );
         });
 
@@ -320,6 +355,7 @@ impl AudioHandler {
         // Clone modulation unit if exists
         let modulation_unit_clone = self.modulation_unit.as_ref().map(Arc::clone);
         let recorder_active = self.recorder_active;
+        let file_save_path = self.file_save_path.clone();
 
         // Spawn audio processing thread
         let handle = thread::spawn(move || {
@@ -330,6 +366,7 @@ impl AudioHandler {
                 control,
                 modulation_unit_clone,
                 recorder_active,
+                file_save_path, // Pass file save path for throughput mode
             );
         });
 
@@ -392,6 +429,7 @@ impl AudioHandler {
         control: Arc<Mutex<bool>>,
         modulation_unit: Option<Arc<Mutex<ModulationUnit>>>,
         recorder_active: bool,
+        file_save_path: Option<String>,
     ) {
         // Create the audio engine
         let audio_engine = match AudioEngine::new(
@@ -431,7 +469,7 @@ impl AudioHandler {
         }
 
         // Stop the engine
-        if let Err(e) = audio_engine.stop() {
+        if let Err(e) = audio_engine.stop(file_save_path) {
             eprintln!("Failed to stop audio engine: {}", e);
         }
     }

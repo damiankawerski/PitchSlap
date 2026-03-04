@@ -18,3 +18,11 @@ pub fn deinitialize_audio() -> Result<(), String> {
         .clear_app_handle()
         .map_err(|e| e.to_string())
 }
+
+#[tauri::command]
+pub fn is_initialized() -> bool {
+    AudioControls::get_instance()
+        .lock()
+        .map(|controls| controls.is_initialized())
+        .unwrap_or(false)
+}

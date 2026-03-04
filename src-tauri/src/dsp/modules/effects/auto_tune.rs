@@ -260,4 +260,8 @@ impl EffectModule for AutoTune {
         self.set_scale(scale);
         Ok(())
     }
+
+    fn get_scale(&self) -> Option<Scale> {
+        Some(self.scale)
+    }
 }

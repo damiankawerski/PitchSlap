@@ -2,14 +2,13 @@ import { AppSidebar } from '@/components/layout/app-sidebar';
 import { SidebarProvider } from '@/components/ui/sidebar';
 import { createRootRoute, Outlet } from '@tanstack/react-router';
 import '@/index.css';
-import '@/components/bits/DarkVeil.css';
-import ColorBends from '@/components/bits/ColorBends';
+import Balatro from '@/components/bits/Balatro';
 
 const RootLayout = () => (
   <>
     <SidebarProvider defaultOpen={true}>
       <div className="fixed inset-0 z-0 pointer-events-none">
-        <ColorBends />
+        <Balatro/>
       </div>
       <div className="relative z-10 flex h-svh overflow-hidden">
         <AppSidebar />

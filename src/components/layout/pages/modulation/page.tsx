@@ -4,6 +4,7 @@ import { EffectCard } from "@/components/features/effect-card";
 import { EFFECTS_LIST } from "@/lib/consts/effects-list";
 import { PageTitle } from "../shared/page-title";
 import { get_active_effects, appendEffect, removeEffect } from "@/lib/invokes/modulation";
+import { Sliders } from "lucide-react";
 
 // Import images
 import amplifierImg from "@/assets/amplifier.jpg";
@@ -15,6 +16,7 @@ import pitchshifterImg from "@/assets/pitchshifter.jpg";
 import reverbImg from "@/assets/reverb.jpg";
 import vibratoImg from "@/assets/vibrato.jpg";
 import vocoderImg from "@/assets/vocoder.jpg";
+import { Separator } from "@/components/ui/separator";
 
 type EffectData = {
   title: string;
@@ -125,9 +127,14 @@ export default function ModulationPage() {
 
   return (
     <div className="container mx-auto p-6 space-y-8">
-      <div className="space-y-2">
-        <PageTitle title="Modulation Effects" />
-      </div>
+        <header className="flex flex-col gap-2">
+          <PageTitle title="Modulation" icon={Sliders} />
+          <p className="text-sm text-muted-foreground">
+            Enable and configure real-time audio effects applied to your signal.
+          </p>
+        </header>
+      
+      <Separator className="my-4" />
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
         {EFFECTS_LIST.map((effectKey) => {

@@ -148,6 +148,10 @@ impl AudioControls {
         self.audio_handler.set_auto_tune_scale(scale)
     }
 
+    pub fn get_auto_tune_scale(&self) -> Option<crate::dsp::modules::effects::auto_tune::Scale> {
+        self.audio_handler.get_auto_tune_scale()
+    }
+
     pub fn get_active_effects(&self) -> Vec<String> {
         self.audio_handler.get_active_effects()
     }
@@ -162,6 +166,10 @@ impl AudioControls {
         self.audio_handler.clear_app_handle()
     }
 
+    pub fn is_initialized(&self) -> bool {
+        self.audio_handler.is_app_handle_set()
+    }
+
     // Recording controls
 
     pub fn start_recording(&mut self) -> anyhow::Result<()> {
@@ -170,5 +178,17 @@ impl AudioControls {
 
     pub fn stop_recording(&mut self) -> anyhow::Result<()> {
         self.audio_handler.stop_recording()
+    }
+
+    pub fn set_file_save_path(&mut self, path: Option<String>) -> anyhow::Result<()> {
+        self.audio_handler.set_file_save_path(path)
+    }
+
+    pub fn is_recording(&self) -> bool {
+        self.audio_handler.is_recording()
+    }
+
+    pub fn get_file_save_path(&self) -> Option<String> {
+        self.audio_handler.get_file_save_path()
     }
 }

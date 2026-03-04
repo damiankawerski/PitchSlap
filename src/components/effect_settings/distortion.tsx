@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { CustomInputNumber } from '@/components/controls/custom-input-number';
 import { get_parameters, set_effect_parameters } from '@/lib/invokes/modulation';
+import { TransparentCard } from '../ui/transparent-card';
 
 const EFFECT_NAME = 'distortion';
 
@@ -39,18 +40,20 @@ export function DistortionSettings() {
   };
 
   return (
-    <div className="flex flex-col gap-6">
-      {PARAMS.map((p) => (
-        <CustomInputNumber
-          key={p.name}
-          label={p.label}
-          min={p.min}
-          max={p.max}
-          step={p.step}
-          value={values[p.name]}
-          onChange={(v) => handleChange(p.name, v)}
-        />
-      ))}
-    </div>
+    <TransparentCard className="pt-0 pb-6">
+      <div className="flex flex-col gap-6">
+        {PARAMS.map((p) => (
+          <CustomInputNumber
+            key={p.name}
+            label={p.label}
+            min={p.min}
+            max={p.max}
+            step={p.step}
+            value={values[p.name]}
+            onChange={(v) => handleChange(p.name, v)}
+          />
+        ))}
+      </div>
+    </TransparentCard>
   );
 }

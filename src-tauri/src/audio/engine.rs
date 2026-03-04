@@ -40,10 +40,10 @@ impl AudioEngine {
         Ok(())
     }
 
-    pub fn stop(&self) -> anyhow::Result<()> {
+    pub fn stop(&self, save_path: Option<String>) -> anyhow::Result<()> {
         // Stop input and output streams
         self.streams.stop_input_stream()?;
-        self.streams.stop_output_stream()?;
+        self.streams.stop_output_stream(save_path)?;
         Ok(())
     }
 }

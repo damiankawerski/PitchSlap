@@ -66,6 +66,14 @@ pub fn set_auto_tune_scale(scale: crate::dsp::modules::effects::auto_tune::Scale
 }
 
 #[tauri::command]
+pub fn get_auto_tune_scale() -> Result<Option<crate::dsp::modules::effects::auto_tune::Scale>, String> {
+    with_audio_controls(|controls| {
+        let scale = controls.get_auto_tune_scale();
+        Ok(scale)
+    })
+}
+
+#[tauri::command]
 pub fn get_parameters(effect_name: &str) -> Result<Vec<crate::dsp::modules::utils::EffectParameter>, String> {
     with_audio_controls(|controls| {
         let parameters = controls.get_parameters(effect_name)?;

@@ -4,6 +4,7 @@
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
+        .plugin(tauri_plugin_dialog::init())
         .invoke_handler(tauri::generate_handler![
             super::switches::loopback,
             super::switches::stop_loopback,
@@ -32,6 +33,13 @@ pub fn run() {
             super::modulation_conf::get_active_effects,
             super::modulation_conf::get_parameters,
             super::modulation_conf::set_auto_tune_scale,
+            super::modulation_conf::get_auto_tune_scale,
+            super::switches::start_recording,
+            super::switches::stop_recording,
+            super::switches::set_file_save_path,
+            super::switches::is_recording,
+            super::switches::get_file_save_path,
+            super::visualizer::is_initialized
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

@@ -47,7 +47,6 @@ pub fn stop_throughput() -> Result<String, String> {
     })
 }
 
-
 #[tauri::command]
 pub fn start_recording() -> Result<String, String> {
     with_audio_controls(|controls| {
@@ -63,3 +62,28 @@ pub fn stop_recording() -> Result<String, String> {
         Ok("Recording stopped successfully".to_string())
     })
 }
+
+#[tauri::command]
+pub fn set_file_save_path(path: String) -> Result<String, String> {
+    with_audio_controls(|controls| {
+        controls.set_file_save_path(Some(path))?;
+        Ok("File save path set successfully".to_string())
+    })
+}
+
+#[tauri::command]
+pub fn is_recording() -> Result<bool, String> {
+    with_audio_controls(|controls| {
+        let recording = controls.is_recording();
+        Ok(recording)
+    })
+}
+
+#[tauri::command]
+pub fn get_file_save_path() -> Result<Option<String>, String> {
+    with_audio_controls(|controls| {
+        let path = controls.get_file_save_path();
+        Ok(path)
+    })
+}
+    

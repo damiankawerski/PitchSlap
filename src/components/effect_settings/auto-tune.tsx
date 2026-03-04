@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import { CustomInputNumber } from '@/components/controls/custom-input-number';
-import { get_parameters, set_effect_parameters } from '@/lib/invokes/modulation';
+import { get_auto_tune_scale, get_parameters, set_effect_parameters } from '@/lib/invokes/modulation';
 import { set_auto_tune_scale } from '@/lib/invokes/modulation';
 import { CommonSettingsSelector } from '@/components/controls/selectors/common-settings-select';
+import { TransparentCard } from '../ui/transparent-card';
 import { Music } from 'lucide-react';
 
 const EFFECT_NAME = 'autotune';
@@ -37,6 +38,9 @@ export function AutoTuneSettings() {
   const timers = useRef<Partial<Record<ParamName, ReturnType<typeof setTimeout>>>>({});
 
   useEffect(() => {
+    get_auto_tune_scale().then((s) => {
+      if (s) setScale(s);
+    });
     get_parameters(EFFECT_NAME).then((params) => {
       if (!params.length) return;
       setValues((prev) => {
@@ -64,26 +68,28 @@ export function AutoTuneSettings() {
   };
 
   return (
-    <div className="flex flex-col gap-6">
-      <CommonSettingsSelector
-        label="Scale"
-        items={SCALES}
-        value={scale}
-        onChange={handleScaleChange}
-        placeholder="Select a scale"
-        icon={Music}
-      />
-      {PARAMS.map((p) => (
-        <CustomInputNumber
-          key={p.name}
-          label={p.label}
-          min={p.min}
-          max={p.max}
-          step={p.step}
-          value={values[p.name]}
-          onChange={(v) => handleChange(p.name, v)}
+    <TransparentCard className="pt-0 pb-6">
+      <div className="flex flex-col gap-6">
+        <CommonSettingsSelector
+          label="Scale"
+          items={SCALES}
+          value={scale}
+          onChange={handleScaleChange}
+          placeholder="Select a scale"
+          icon={Music}
         />
-      ))}
-    </div>
+        {PARAMS.map((p) => (
+          <CustomInputNumber
+            key={p.name}
+            label={p.label}
+            min={p.min}
+            max={p.max}
+            step={p.step}
+            value={values[p.name]}
+            onChange={(v) => handleChange(p.name, v)}
+          />
+        ))}
+      </div>
+    </TransparentCard>
   );
 }

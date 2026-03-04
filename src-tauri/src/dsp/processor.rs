@@ -72,6 +72,10 @@ impl AudioProcessor {
         self.modulation_chain.set_auto_tune_scale(scale)
     }
 
+    pub fn get_auto_tune_scale(&self) -> Option<crate::dsp::modules::effects::auto_tune::Scale> {
+        self.modulation_chain.get_auto_tune_scale()
+    }
+
     pub fn get_effect_parameters(&self, effect_name: &str) -> anyhow::Result<Vec<crate::dsp::modules::utils::EffectParameter>> {
         self.modulation_chain.get_effect_parameters(effect_name)
     }
