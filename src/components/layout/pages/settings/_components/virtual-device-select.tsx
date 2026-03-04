@@ -8,7 +8,7 @@ import { MicVocal } from 'lucide-react';
 export function VirtualDeviceSelect() {
   const [devices, setDevices] = useState<string[]>([]);
   const [selectedDevice, setSelectedDevice] = useState<string | null>(null);
-	let device = null;
+
 
   useEffect(() => {
     async function fetchDevices() {
@@ -16,7 +16,6 @@ export function VirtualDeviceSelect() {
       setDevices(availableDevices);
 
       const currentDevice = await getSelectedVirtualDevice();
-			device = currentDevice;
       setSelectedDevice(currentDevice);
     }
 
