@@ -11,7 +11,6 @@ import amplifierImg from "@/assets/amplifier.jpg";
 import autotuneImg from "@/assets/autotune.png";
 import bitcrusherImg from "@/assets/bitcrusher.jpg";
 import chorusImg from "@/assets/chorus.jpg";
-import distortionImg from "@/assets/distortion.jpg";
 import pitchshifterImg from "@/assets/pitchshifter.jpg";
 import reverbImg from "@/assets/reverb.jpg";
 import vibratoImg from "@/assets/vibrato.jpg";
@@ -48,7 +47,7 @@ const effectsData: Record<string, EffectData> = {
   distortion: {
     title: "Distortion",
     description: "Alters the original sound by clipping the signal, adding grit and sustain.",
-    image: distortionImg,
+    image: reverbImg,
   },
   pitchshifter: {
     title: "Pitch Shifter",
